@@ -135,7 +135,7 @@ class FEmapping():
            content: 节点闭合标签里的文本内容
            return 新节点'''
         element = Element(tag, property_map)
-        element.tail='\n'+'\t'*2
+        element.tail='\n'+'\t'*3
         if content == '':
             return element
         element.text = content
