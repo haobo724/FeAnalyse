@@ -36,6 +36,7 @@ class FEmapping():
 
         for link in soup.find_all('SolidDomain'):
             if link['mat'] == 'breast':
+                print('In SolidDomain mat key is',link['name'])
                 return link['name']
         return 'None'
 
@@ -57,11 +58,11 @@ class FEmapping():
             element.setdefault(f'{id}', t[:8])
         return element
 
-    def get_node_dic(self, data):
+    def get_node_dic(self, data, Breast_node_name='breast06_LCC'):
         soup = BeautifulSoup(data, 'xml')
         node = {}
         for link in soup.find_all('Nodes'):
-            if link['name'] == 'breast06_LCC':
+            if link['name'] == Breast_node_name:
                 for n in link:
                     if type(n) != type(link):
                         continue
@@ -251,17 +252,15 @@ if __name__ == '__main__':
     Mesh_nodes = fe.find_nodes(tree, "Mesh")  # 找到Mesh节点
 
     # origin_breast_nodes = fe.get_node_by_keyvalue(Elements_nodes, {"name": "Part6"}) # 通过属性准确定位子节点
-    # target_del_node = fe.del_node_by_tagkeyvalue(Mesh_nodes, "Elements", {"name": "Part6"})  # 准确定位子节点并删除之
+    target_del_node = fe.del_node_by_tagkeyvalue(Mesh_nodes, "Elements", {"name": "Part6"})  # DEL NODE PART6
     # Elements_Fat=fe.get_node_by_keyvalue(Elements_nodes, {"name": "Part61"}) # 通过属性准确定位子节点
     fe.add_child_node(Mesh_nodes, Elements_Fat) # 插入到父节点之下
     Mesh_nodes = fe.find_nodes(tree, "Mesh/Elements")  # 找到Mesh_nodes节点
     Elements_Fat = fe.get_node_by_keyvalue(Mesh_nodes, {"type": "hex20", "name": "Part61"})  # 通过属性准确定位子节点
 
     for index in fat_list:
-        print(index)
         context=element_dic[index]
         context=','.join(context)
-        print(context)
         # context = ','.join(test[1])
         new_fat = fe.create_node("elem", {"id": f"{index}"}, content=context)
 
