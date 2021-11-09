@@ -109,7 +109,7 @@ class FEmapping():
                 self.tissue_center.append(cord)
 
 
-    def FatOR_Tissue(self, cord, thresh=100):
+    def FatOR_Tissue(self, cord, thresh=200):
         offset=[0,self.Columns//2,0]
 
         pixel_cord = list(map(lambda x: int(x[0] / x[1]), zip(cord,self.xyz_spacing )))
