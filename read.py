@@ -10,6 +10,8 @@ In visualization part:
 each single colourful point represents the center of each element
 
 I think the result should be right :)
+
+test
 '''
 import pickle
 from save import save_pickle
