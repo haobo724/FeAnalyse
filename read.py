@@ -19,6 +19,8 @@ from bs4 import BeautifulSoup
 from xml.etree.ElementTree import ElementTree, Element
 import numpy as np
 from visualization import show_result
+import pydicom
+
 
 class FEmapping():
     def __init__(self):
@@ -29,7 +31,7 @@ class FEmapping():
         self.Columns = None
         self.PixelSpacing = []
         self.SliceThickness = []
-        self.NumberofFrames = []
+        self.NumberofFrames = None
         self.fat_center=[]
         self.tissue_center=[]
         self.xyz_spacing =[]
@@ -84,7 +86,7 @@ class FEmapping():
         cloud = np.array(cord_node)
         max=np.max(cloud,axis=0)
         min=np.min(cloud,axis=0)
-        min[1:]=0
+        # min[1:]=0
         xyz_range=max-min
 
         volumen_size=[self.Rows,self.Columns,self.NumberofFrames]
@@ -111,7 +113,16 @@ class FEmapping():
         offset=[0,self.Columns//2,0]
 
         pixel_cord = list(map(lambda x: int(x[0] / x[1]), zip(cord,self.xyz_spacing )))
-        gray_value=self.dicom_array[pixel_cord[1] ,pixel_cord[0] +self.Columns//2,pixel_cord[2] ]
+        try:
+            c0=min(pixel_cord[1]  +self.Rows//2,self.dicom_array.shape[0]-1)
+            c1=min(pixel_cord[0] +self.Columns//2,self.dicom_array.shape[1]-1)
+            c2=min(pixel_cord[2]+self.NumberofFrames//2,self.dicom_array.shape[2]-1)
+
+
+            gray_value=self.dicom_array[c0,c1,c2 ]
+        except:
+            print(pixel_cord[1] +self.Rows//2 ,pixel_cord[0] +self.Columns//2,pixel_cord[2]+self.NumberofFrames//2)
+            print(self.Rows,self.Columns,self.NumberofFrames)
         if gray_value>thresh:
 
             return  True
@@ -200,7 +211,6 @@ class FEmapping():
                     parent_node.remove(child)
 
     def read_dicom(self, dicom):
-        import pydicom
         head = pydicom.read_file(dicom)
         dicom_volumen = pydicom.dcmread(dicom)
 
@@ -234,7 +244,7 @@ if __name__ == '__main__':
     element = fe.get_Ele(data, Part)
 
     element_dic = fe.get_node_single_ele(element)
-    node_dic = fe.get_node_dic(data)
+    node_dic = fe.get_node_dic(data,'Breast06_py')
     fe.analyse(element_dic, node_dic)
     fat_list, tissue_list=fe.get_result()
     a, b=fe.get_center()
