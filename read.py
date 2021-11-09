@@ -35,12 +35,15 @@ class FEmapping():
         self.fat_center=[]
         self.tissue_center=[]
         self.xyz_spacing =[]
+        self.breast_name=''
+        self.thresh=200
     def get_Part_index(self, text):
         soup = BeautifulSoup(text, 'xml')
 
         for link in soup.find_all('SolidDomain'):
             if link['mat'] == 'breast':
                 print('In SolidDomain mat key is',link['name'])
+                self.breast_name=link['name']
                 return link['name']
         return 'None'
 
@@ -88,8 +91,12 @@ class FEmapping():
         min=np.min(cloud,axis=0)
         # min[1:]=0
         xyz_range=max-min
-
-        volumen_size=[self.Rows,self.Columns,self.NumberofFrames]
+        range=np.where(self.dicom_array>0)
+        x=np.max(range[0])-np.min(range[0])
+        y=np.max(range[1])-np.min(range[1])
+        z=np.max(range[2])-np.min(range[2])
+        # volumen_size=[self.Rows,self.Columns,self.NumberofFrames]
+        volumen_size=[x,y,z]
         # self.xyz_spacing = list(map(lambda x: x[0] / x[1], zip(xyz_range,volumen_size)))
         self.xyz_spacing = [xyz_range[1]/volumen_size[0],xyz_range[0]/volumen_size[1],xyz_range[2]/volumen_size[2]]
         for element_index in element_dic.items():
@@ -109,8 +116,8 @@ class FEmapping():
                 self.tissue_center.append(cord)
 
 
-    def FatOR_Tissue(self, cord, thresh=200):
-        offset=[0,self.Columns//2,0]
+    def FatOR_Tissue(self, cord):
+        thresh=self.thresh
 
         pixel_cord = list(map(lambda x: int(x[0] / x[1]), zip(cord,self.xyz_spacing )))
         try:
@@ -244,6 +251,7 @@ if __name__ == '__main__':
     element = fe.get_Ele(data, Part)
 
     element_dic = fe.get_node_single_ele(element)
+
     node_dic = fe.get_node_dic(data,'Breast06_py')
     fe.analyse(element_dic, node_dic)
     fat_list, tissue_list=fe.get_result()
@@ -257,18 +265,17 @@ if __name__ == '__main__':
     show_result("fat.pkl")
     show_result("tissue.pkl")
 
-#TODO: modifiy the feb file but not yet
     tree = fe.read_xml("breast.feb")
     Elements_Fat = fe.create_node("Elements", {"type": "hex20", "name": "Part61"})  # 新建Fat节点
     Elements_Tissue = fe.create_node("Elements", {"type": "hex20", "name": "Part62"})  # 新建Tissue节点
     Mesh_nodes = fe.find_nodes(tree, "Mesh")  # 找到Mesh节点
-
-    # origin_breast_nodes = fe.get_node_by_keyvalue(Elements_nodes, {"name": "Part6"}) # 通过属性准确定位子节点
-    target_del_node = fe.del_node_by_tagkeyvalue(Mesh_nodes, "Elements", {"name": "Part6"})  # DEL NODE PART6
-    # Elements_Fat=fe.get_node_by_keyvalue(Elements_nodes, {"name": "Part61"}) # 通过属性准确定位子节点
+    Original_name=fe.breast_name
+    target_del_node = fe.del_node_by_tagkeyvalue(Mesh_nodes, "Elements", {"name": f"{Original_name}"})  # DEL NODE PART6
     fe.add_child_node(Mesh_nodes, Elements_Fat) # 插入到父节点之下
+    fe.add_child_node(Mesh_nodes, Elements_Tissue) # 插入到父节点之下
     Mesh_nodes = fe.find_nodes(tree, "Mesh/Elements")  # 找到Mesh_nodes节点
     Elements_Fat = fe.get_node_by_keyvalue(Mesh_nodes, {"type": "hex20", "name": "Part61"})  # 通过属性准确定位子节点
+    Elements_Tissue = fe.get_node_by_keyvalue(Mesh_nodes, {"type": "hex20", "name": "Part62"})  # 通过属性准确定位子节点
 
     for index in fat_list:
         context=element_dic[index]
@@ -277,5 +284,10 @@ if __name__ == '__main__':
         new_fat = fe.create_node("elem", {"id": f"{index}"}, content=context)
 
         fe.add_child_node(Elements_Fat, new_fat)  # 插入到父节点之下
+    for index in tissue_list:
+        context = element_dic[index]
+        context = ','.join(context)
+        new_tissue = fe.create_node("elem", {"id": f"{index}"}, content=context)
 
+        fe.add_child_node(Elements_Tissue, new_tissue)  # 插入到父节点之下
     fe.write(tree, "./xiugai.feb")
