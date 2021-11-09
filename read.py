@@ -104,7 +104,6 @@ class FEmapping():
             for single_node in element_index[1]:
                 temp = list(map(float, node_dic[single_node]))
                 cord = list(map(lambda x: x[0] + x[1], zip(cord, temp)))
-            # print(cord)
             # print(list(map(lambda x: x/8, cord)))
             center_cord = list(map(lambda x: x / 8, cord))
             result = self.FatOR_Tissue(center_cord)
@@ -252,7 +251,7 @@ if __name__ == '__main__':
 
     element_dic = fe.get_node_single_ele(element)
 
-    node_dic = fe.get_node_dic(data,'Breast06_py')
+    node_dic = fe.get_node_dic(data)
     fe.analyse(element_dic, node_dic)
     fat_list, tissue_list=fe.get_result()
     a, b=fe.get_center()
