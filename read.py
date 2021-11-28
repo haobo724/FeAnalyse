@@ -53,7 +53,8 @@ class FEmapping():
         for link in soup.find_all('Elements'):
             if link['name'] == f'{Part}':
                 return link
-
+            else:
+                print(link['name'])
         print('Not found')
         return None
 
@@ -127,7 +128,10 @@ class FEmapping():
             c0=min(pixel_cord[1]  +self.Rows//2,self.dicom_array.shape[0]-1)
             c1=min(pixel_cord[0] +self.Columns//2,self.dicom_array.shape[1]-1)
             c2=min(pixel_cord[2]+self.NumberofFrames//2,self.dicom_array.shape[2]-1)
-
+            # c0=min(pixel_cord[1]  -self.Rows,self.dicom_array.shape[0]-1)
+            # c1=min(pixel_cord[0] -self.Columns,self.dicom_array.shape[1]-1)
+            # c2=min(pixel_cord[2]-self.NumberofFrames//2,self.dicom_array.shape[2]-1)
+            # print(c0,c1,c2)
 
             gray_value=self.dicom_array[c0,c1,c2 ]
         except:
@@ -136,6 +140,7 @@ class FEmapping():
         if gray_value>thresh:
 
             return  True
+
         return False
 
     def Move_in_Fat(self, element_index):
@@ -228,11 +233,10 @@ class FEmapping():
         self.dicom_array=np.moveaxis(self.dicom_array,0,2)
         self.PixelSpacing = head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['PixelSpacing'].value
         self.SliceThickness = [head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['SliceThickness'].value]
-
         self.NumberofFrames = head[0x0028, 0x0008].value
         self.Rows = head[0x0028, 0x0010].value
         self.Columns = head[0x0028, 0x0011].value
-
+        # self.dicom_array=(self.dicom_array/np.max(self.dicom_array))*255
 
     def write(self, tree, out_path):
         '''''将xml文件写出
@@ -246,7 +250,7 @@ class FEmapping():
         return self.fat_center,self.tissue_center
 
 if __name__ == '__main__':
-    febfile_name="breast06_py.feb"
+    febfile_name="Breast06_py.feb"
     dcm_name="breast06_py.dcm"
     Node_name=febfile_name.split('.')[0]
     temp=list(Node_name)
@@ -261,9 +265,7 @@ if __name__ == '__main__':
     element = fe.get_Ele(data, Part)
 
     element_dic,element_dic_full = fe.get_node_single_ele(element)
-
     node_dic = fe.get_node_dic(data,f'{Node_name}')
-
     fe.analyse(element_dic, node_dic)
 
     fat_list, tissue_list=fe.get_result()
@@ -276,10 +278,10 @@ if __name__ == '__main__':
 
     save_pickle(fat_list,node_dic,element_dic_full, 'fat_node')
     save_pickle(tissue_list,node_dic,element_dic_full, 'tissue_node')
-
-
     show_result("fat.pkl")
+
     show_result("tissue.pkl")
+
 
     #create
 

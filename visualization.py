@@ -8,7 +8,7 @@ def imgetoshow3DFast(imgcloudflatten):
     point_cloud.points = open3d.utility.Vector3dVector(imgcloudflatten)
     open3d.visualization.draw_geometries([point_cloud])
 
-def show_result(name='node.pkl'):
+def show_result(name='node_bad.pkl'):
     with open(name, 'rb') as f:
         tst = pickle.load(f)
     a = []
@@ -17,10 +17,11 @@ def show_result(name='node.pkl'):
             k = list(float(i) for i in k)
             a.append(k)
             # a.append([0,0.1,0])
-            a.append([0,0,0.1])
-            a.append([0,0,-0.5])
+            a.append([0,0,0.2])
+            a.append([0,0,-0.2])
 
-            a.append([0.1,0,0])
+            a.append([0.2,0,0])
+            a.append([-0.2,0,0])
     except:
         for k in tst:
             k = list(float(i) for i in k)
