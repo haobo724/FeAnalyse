@@ -258,7 +258,7 @@ if __name__ == '__main__':
     parser.add_argument('--Node_name', type=str, help='', default='breast')
 
     args = parser.parse_args()
-
+    print(args)
 
     febfile_name=args.febfile_name
     dcm_name=args.dcm_name
@@ -268,7 +268,6 @@ if __name__ == '__main__':
     temp=list(Node_name)
     # Node_name=''.join(temp)
     Node_name=args.Node_name
-    print(Node_name)
 
 
 
