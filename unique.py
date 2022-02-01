@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import pickle
 from read import FEmapping
@@ -9,7 +10,14 @@ def show_result(name='fat.pkl'):
         print(i)
 
 if __name__ == '__main__':
-    with open("Breast06_py_new.feb", "rb") as f:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--newfebfile_name', type=str, help='', default=r'breast_new.feb')
+    args = parser.parse_args()
+    febfile_name=args.newfebfile_name
+
+
+    args = parser.parse_args()
+    with open(febfile_name, "rb") as f:
         data = f.read()
     new_fe=FEmapping()
     Part_index = new_fe.get_Part_index(data,matname='fat')

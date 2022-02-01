@@ -1,5 +1,3 @@
-
-
 '''
 install the below required third libs with pip install -r requirements.txt
 
@@ -33,19 +31,21 @@ class FEmapping():
         self.PixelSpacing = []
         self.SliceThickness = []
         self.NumberofFrames = None
-        self.fat_center=[]
-        self.tissue_center=[]
-        self.xyz_spacing =[]
-        self.breast_name=''
-        self.thresh=200
-    def get_Part_index(self, text,matname='breast'):
+        self.fat_center = []
+        self.tissue_center = []
+        self.xyz_spacing = []
+        self.breast_name = ''
+        self.thresh = 200
+
+    def get_Part_index(self, text, matname='breast'):
         soup = BeautifulSoup(text, 'xml')
 
         for link in soup.find_all('SolidDomain'):
             if link['mat'] == matname:
-                print('In SolidDomain mat key is',link['name'])
-                self.breast_name=link['name']
+                print('In SolidDomain mat key is', link['name'])
+                self.breast_name = link['name']
                 return link['name']
+        print('')
         return 'None'
 
     def get_Ele(self, text, Part):
@@ -61,7 +61,7 @@ class FEmapping():
 
     def get_node_single_ele(self, data):
         element = {}
-        element_full={}
+        element_full = {}
         for e in data:
             if type(e) != type(data):
                 continue
@@ -69,9 +69,9 @@ class FEmapping():
             t = e.text.split(',')
             element.setdefault(f'{id}', t[:8])
             element_full.setdefault(f'{id}', t)
-        return element,element_full
+        return element, element_full
 
-    def get_node_dic(self, data, Breast_node_name='breast06_LCC'):
+    def get_node_dic(self, data, Breast_node_name=''):
         soup = BeautifulSoup(data, 'xml')
         node = {}
         for link in soup.find_all('Nodes'):
@@ -87,24 +87,25 @@ class FEmapping():
         return node
 
     def analyse(self, element_dic, node_dic):
-        cord_node=[]
+        cord_node = []
         for k in node_dic.values():
             k = list(float(i) for i in k)
             cord_node.append(k)
 
         cloud = np.array(cord_node)
-        max=np.max(cloud,axis=0)
-        min=np.min(cloud,axis=0)
+        max = np.max(cloud, axis=0)
+        min = np.min(cloud, axis=0)
         # min[1:]=0
-        xyz_range=max-min
-        range=np.where(self.dicom_array>0)
-        x=np.max(range[0])-np.min(range[0])
-        y=np.max(range[1])-np.min(range[1])
-        z=np.max(range[2])-np.min(range[2])
+        xyz_range = max - min
+        range = np.where(self.dicom_array > 0)
+        x = np.max(range[0]) - np.min(range[0])
+        y = np.max(range[1]) - np.min(range[1])
+        z = np.max(range[2]) - np.min(range[2])
         # volumen_size=[self.Rows,self.Columns,self.NumberofFrames]
-        volumen_size=[x,y,z]
+        volumen_size = [x, y, z]
         # self.xyz_spacing = list(map(lambda x: x[0] / x[1], zip(xyz_range,volumen_size)))
-        self.xyz_spacing = [xyz_range[1]/volumen_size[0],xyz_range[0]/volumen_size[1],xyz_range[2]/volumen_size[2]]
+        self.xyz_spacing = [xyz_range[1] / volumen_size[0], xyz_range[0] / volumen_size[1],
+                            xyz_range[2] / volumen_size[2]]
         for element_index in element_dic.items():
             cord = [0, 0, 0]
             for single_node in element_index[1]:
@@ -120,27 +121,26 @@ class FEmapping():
                 self.Move_in_Tissue(element_index[0])
                 self.tissue_center.append(cord)
 
-
     def FatOR_Tissue(self, cord):
-        thresh=self.thresh
+        thresh = self.thresh
 
-        pixel_cord = list(map(lambda x: int(x[0] / x[1]), zip(cord,self.xyz_spacing )))
+        pixel_cord = list(map(lambda x: int(x[0] / x[1]), zip(cord, self.xyz_spacing)))
         try:
-            c0=min(pixel_cord[1]  +self.Rows//2,self.dicom_array.shape[0]-1)
-            c1=min(pixel_cord[0] +self.Columns//2,self.dicom_array.shape[1]-1)
-            c2=min(pixel_cord[2]+self.NumberofFrames//2,self.dicom_array.shape[2]-1)
+            c0 = min(pixel_cord[1] + self.Rows // 2, self.dicom_array.shape[0] - 1)
+            c1 = min(pixel_cord[0] + self.Columns // 2, self.dicom_array.shape[1] - 1)
+            c2 = min(pixel_cord[2] + self.NumberofFrames // 2, self.dicom_array.shape[2] - 1)
             # c0=min(pixel_cord[1]  -self.Rows,self.dicom_array.shape[0]-1)
             # c1=min(pixel_cord[0] -self.Columns,self.dicom_array.shape[1]-1)
             # c2=min(pixel_cord[2]-self.NumberofFrames//2,self.dicom_array.shape[2]-1)
             # print(c0,c1,c2)
 
-            gray_value=self.dicom_array[c0,c1,c2 ]
+            gray_value = self.dicom_array[c0, c1, c2]
         except:
-            print(pixel_cord[1] +self.Rows//2 ,pixel_cord[0] +self.Columns//2,pixel_cord[2]+self.NumberofFrames//2)
-            print(self.Rows,self.Columns,self.NumberofFrames)
-        if gray_value>thresh:
-
-            return  True
+            print(pixel_cord[1] + self.Rows // 2, pixel_cord[0] + self.Columns // 2,
+                  pixel_cord[2] + self.NumberofFrames // 2)
+            print(self.Rows, self.Columns, self.NumberofFrames)
+        if gray_value > thresh:
+            return True
 
         return False
 
@@ -165,7 +165,7 @@ class FEmapping():
            content: 节点闭合标签里的文本内容
            return 新节点'''
         element = Element(tag, property_map)
-        element.tail='\n'+'\t'*3
+        element.tail = '\n' + '\t' * 3
         if content == '':
             return element
         element.text = content
@@ -231,7 +231,7 @@ class FEmapping():
         dicom_volumen = pydicom.dcmread(dicom)
 
         self.dicom_array = dicom_volumen.pixel_array
-        self.dicom_array=np.moveaxis(self.dicom_array,0,2)
+        self.dicom_array = np.moveaxis(self.dicom_array, 0, 2)
         self.PixelSpacing = head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['PixelSpacing'].value
         self.SliceThickness = [head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['SliceThickness'].value]
         self.NumberofFrames = head[0x0028, 0x0008].value
@@ -244,11 +244,13 @@ class FEmapping():
                tree: xml树
                out_path: 写出路径'''
         tree.write(out_path, encoding="ISO-8859-1", xml_declaration=True)
+
     def get_result(self):
-        return self.fat_list,self.tissue_list
+        return self.fat_list, self.tissue_list
 
     def get_center(self):
-        return self.fat_center,self.tissue_center
+        return self.fat_center, self.tissue_center
+
 
 if __name__ == '__main__':
 
@@ -256,54 +258,54 @@ if __name__ == '__main__':
     parser.add_argument('--febfile_name', type=str, help='', default=r'breast.feb')
     parser.add_argument('--dcm_name', type=str, help='', default='breast.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
+    parser.add_argument('--mat_name', type=str, help='', default='matbreast')
 
     args = parser.parse_args()
     print(args)
 
-    febfile_name=args.febfile_name
-    dcm_name=args.dcm_name
+    # step 1 : initialize all name parameters
+    febfile_name = args.febfile_name
+    dcm_name = args.dcm_name
+    Node_name = args.Node_name
+    mat_name = args.mat_name
 
-
-    Node_name=febfile_name.split('.')[0]
-    temp=list(Node_name)
-    # Node_name=''.join(temp)
-    Node_name=args.Node_name
-
-
+    # step 2 : open the dcm and get infos from it
 
     with open(febfile_name, "rb") as f:
         data = f.read()
     fe = FEmapping()
     fe.read_dicom(dcm_name)
 
+    # step 3 : analyse feb file
+    '''
+    workflow :
+    according to matname in  'MeshDomains - SolidDomain' to know the element name ,i.e 'Part1'
+    according to element name to get element infos
+    according to args.Node_name to get node infos
+    
+    '''
 
-
-    Part = fe.get_Part_index(data)
+    Part = fe.get_Part_index(data, matname=mat_name)
     element = fe.get_Ele(data, Part)
-
-    element_dic,element_dic_full = fe.get_node_single_ele(element)
-    node_dic = fe.get_node_dic(data,f'{Node_name}')
+    element_dic, element_dic_full = fe.get_node_single_ele(element)
+    node_dic = fe.get_node_dic(data, f'{Node_name}')
     fe.analyse(element_dic, node_dic)
-
-    fat_list, tissue_list=fe.get_result()
-    fat_center, tissue_center=fe.get_center()
+    fat_list, tissue_list = fe.get_result()
+    fat_center, tissue_center = fe.get_center()
     with open("fat.pkl", 'wb') as f:
         pickle.dump(fat_center, f)
     with open(f"tissue.pkl", 'wb') as f:
         pickle.dump(tissue_center, f)
 
+    save_pickle(fat_list, node_dic, element_dic_full, 'fat_node')
+    save_pickle(tissue_list, node_dic, element_dic_full, 'tissue_node')
 
-    save_pickle(fat_list,node_dic,element_dic_full, 'fat_node')
-    save_pickle(tissue_list,node_dic,element_dic_full, 'tissue_node')
     show_result("fat.pkl")
-
     show_result("tissue.pkl")
-
-
-    #create
+    # step 4 : modify feb file
 
     tree = fe.read_xml(febfile_name)
-    Original_name=fe.breast_name
+    Original_name = fe.breast_name
 
     Elements_Fat = fe.create_node("Elements", {"type": "hex20", "name": "Part61"})  # 新建Fat节点
     Elements_Tissue = fe.create_node("Elements", {"type": "hex20", "name": "Part62"})  # 新建Tissue节点
@@ -311,23 +313,23 @@ if __name__ == '__main__':
     MeshDomains_Fat = fe.create_node("SolidDomain", {"name": "Part61", "mat": "fat"})  # 新建Tissue节点
     MeshDomains_Tissue = fe.create_node("SolidDomain", {"name": "Part62", "mat": "Tissue"})  # 新建Tissue节点
 
-    #del and add
     Mesh_nodes = fe.find_nodes(tree, "Mesh")  # 找到Mesh节点
     MeshDomains = fe.find_nodes(tree, "MeshDomains")  # 找到Mesh节点
     fe.del_node_by_tagkeyvalue(Mesh_nodes, "Elements", {"name": f"{Original_name}"})  # DEL NODE PART6
-    fe.add_child_node(Mesh_nodes, Elements_Fat) # 插入到父节点之下
-    fe.add_child_node(Mesh_nodes, Elements_Tissue) # 插入到父节点之下
-    fe.add_child_node(MeshDomains, MeshDomains_Fat) # 插入到父节点之下
-    fe.add_child_node(MeshDomains, MeshDomains_Tissue) # 插入到父节点之下
+    fe.add_child_node(Mesh_nodes, Elements_Fat)  # 插入到父节点之下
+    fe.add_child_node(Mesh_nodes, Elements_Tissue)  # 插入到父节点之下
+    fe.add_child_node(MeshDomains, MeshDomains_Fat)  # 插入到父节点之下
+    fe.add_child_node(MeshDomains, MeshDomains_Tissue)  # 插入到父节点之下
 
-    # rewrite feb file
+    # step 5 : rewrite feb file
+
     Mesh_nodes = fe.find_nodes(tree, "Mesh/Elements")
     Elements_Fat = fe.get_node_by_keyvalue(Mesh_nodes, {"type": "hex20", "name": "Part61"})  # 通过属性准确定位子节点
     Elements_Tissue = fe.get_node_by_keyvalue(Mesh_nodes, {"type": "hex20", "name": "Part62"})  # 通过属性准确定位子节点
 
     for index in fat_list:
-        context=element_dic_full[index]
-        context=','.join(context)
+        context = element_dic_full[index]
+        context = ','.join(context)
         # context = ','.join(test[1])
         new_fat = fe.create_node("elem", {"id": f"{index}"}, content=context)
 
@@ -338,5 +340,8 @@ if __name__ == '__main__':
         new_tissue = fe.create_node("elem", {"id": f"{index}"}, content=context)
 
         fe.add_child_node(Elements_Tissue, new_tissue)  # 插入到父节点之下
-    new_feb_file=Node_name+'_new'
+
+    # step 6 : save new feb file
+
+    new_feb_file = Node_name + '_new'
     fe.write(tree, f"./{new_feb_file}.feb")
