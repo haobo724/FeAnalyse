@@ -13,6 +13,7 @@ I think the result should be right :)
 
 test
 '''
+import argparse
 import pickle
 from save import save_pickle
 from bs4 import BeautifulSoup
@@ -250,17 +251,34 @@ class FEmapping():
         return self.fat_center,self.tissue_center
 
 if __name__ == '__main__':
-    febfile_name="Breast06_py.feb"
-    dcm_name="breast06_py.dcm"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--febfile_name', type=str, help='', default=r'breast.feb')
+    parser.add_argument('--dcm_name', type=str, help='', default='breast.dcm')
+    parser.add_argument('--Node_name', type=str, help='', default='breast')
+
+    args = parser.parse_args()
+
+
+    febfile_name=args.febfile_name
+    dcm_name=args.dcm_name
+
+
     Node_name=febfile_name.split('.')[0]
     temp=list(Node_name)
-    temp[0]='B'
-    Node_name=''.join(temp)
+    # Node_name=''.join(temp)
+    Node_name=args.Node_name
     print(Node_name)
+
+
+
     with open(febfile_name, "rb") as f:
         data = f.read()
     fe = FEmapping()
-    fe.read_dicom('breast06_py.dcm')
+    fe.read_dicom(dcm_name)
+
+
+
     Part = fe.get_Part_index(data)
     element = fe.get_Ele(data, Part)
 
