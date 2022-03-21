@@ -66,6 +66,8 @@ class FEmapping():
             if type(e) != type(data):
                 continue
             id = e['id']
+            print(id)
+            print(type(e))
             t = e.text.split(',')
             element.setdefault(f'{id}', t[:8])
             element_full.setdefault(f'{id}', t)
@@ -272,7 +274,7 @@ if __name__ == '__main__':
     # step 2 : open the dcm and get infos from it
 
     with open(febfile_name, "rb") as f:
-        data = f.read()
+        feb_data = f.read()
     fe = FEmapping()
     fe.read_dicom(dcm_name)
 
@@ -285,10 +287,10 @@ if __name__ == '__main__':
     
     '''
 
-    Part = fe.get_Part_index(data, matname=mat_name)
-    element = fe.get_Ele(data, Part)
+    Part = fe.get_Part_index(feb_data, matname=mat_name)
+    element = fe.get_Ele(feb_data, Part)
     element_dic, element_dic_full = fe.get_node_single_ele(element)
-    node_dic = fe.get_node_dic(data, f'{Node_name}')
+    node_dic = fe.get_node_dic(feb_data, f'{Node_name}')
     fe.analyse(element_dic, node_dic)
     fat_list, tissue_list = fe.get_result()
     fat_center, tissue_center = fe.get_center()
