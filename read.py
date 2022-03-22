@@ -66,8 +66,6 @@ class FEmapping():
             if type(e) != type(data):
                 continue
             id = e['id']
-            print(id)
-            print(type(e))
             t = e.text.split(',')
             element.setdefault(f'{id}', t[:8])
             element_full.setdefault(f'{id}', t)
