@@ -34,14 +34,15 @@ if __name__ == '__main__':
     with open(febfile_name, "rb") as f:
         feb_data = f.read()
     fe = FEmapping()
-    txt_name_list = []
+    txtname = 'id_elements.txt'
+    # txt_name_list = []
     ids = []
     elements_id = []
     elements = new.get_all_Ele(feb_data)
     print(len(elements),'Element(s) were found, they are:')
     for idx,i in enumerate(elements):
         print(idx+1,':',i['name'])
-        txt_name_list.append(i['name'])
+        # txt_name_list.append(i['name'])
         # print(i['id'])
         for elem in i:
             # if type(elem) != type(i):
@@ -54,8 +55,9 @@ if __name__ == '__main__':
         elements_id.append(ids)
         ids=[]
     i = 1
-    for name,ids in zip(txt_name_list,elements_id):
-        with open(febfile_name+name+'.txt', "w") as f:
+    with open(txtname, "w") as f:
+
+        for ids in elements_id:
             for id in ids:
                 content = id+','+str(i) +'\n'
                 f.writelines(content)
