@@ -48,16 +48,37 @@ class FEmapping():
         print('')
         return 'None'
 
-    def get_Ele(self, text, Part):
+    def get_Ele(self, text, Part_name):
         soup = BeautifulSoup(text, 'xml')
 
         for link in soup.find_all('Elements'):
-            if link['name'] == f'{Part}':
+            if link['name'] == f'{Part_name}':
                 return link
             else:
                 print(link['name'])
         print('Not found')
         return None
+
+    def get_Eles(self, text, Part_name):
+        soup = BeautifulSoup(text, 'xml')
+
+        for link in soup.find_all('ElementSet'):
+            if link['name'] == f'{Part_name}':
+                return link
+            else:
+                print(link['name'])
+        print('Not found')
+        return None
+
+    def get_id(self,data):
+        id_set = []
+        for e in data:
+            if type(e) != type(data):
+                continue
+            id = e['id']
+            id_set.append(id)
+        return id_set
+
 
     def get_node_single_ele(self, data):
         element = {}

@@ -53,10 +53,11 @@ def fake_3d_breast():
         cv2.imshow('test',temp)
         # cv2.waitKey()
         points_A=np.array(np.where(img==1)).transpose((1,0))
-        print(points_A.shape)
+        points_B=np.array(np.where(img==2)).transpose((1,0))
         # cloud_A = [i.append(np.random.randint(10,30)) for i in points_A]
         cloud_A = [np.append(i,np.random.randint(100,200)) for i in points_A]
-        cloud_A = np.array(cloud_A)
+        cloud_B = [np.append(i,np.random.randint(90,150)) for i in points_B]
+        cloud_A = np.array(cloud_A+cloud_B)
         point_cloud.points = open3d.utility.Vector3dVector(cloud_A)
         open3d.visualization.draw_geometries([point_cloud])
 

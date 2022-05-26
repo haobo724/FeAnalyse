@@ -41,8 +41,8 @@ if __name__ == '__main__':
     tree = new_fe.read_xml('Breast06_py_new.feb')
 
     Elements = new_fe.find_nodes(tree, "Mesh/Elements")  # 找到Mesh节点
-    Elements_fat = new_fe.get_node_by_keyvalue(Elements, {"type": "hex20", "name": "Part61"})  # 找到Mesh节点
-    Elements_tissue = new_fe.get_node_by_keyvalue(Elements, {"type": "hex20", "name": "Part62"})  # 找到Mesh节点
+    Elements_fat = new_fe.get_node_by_keyvalue(Elements, {"type": "hex20", "name": "Part61"})
+    Elements_tissue = new_fe.get_node_by_keyvalue(Elements, {"type": "hex20", "name": "Part62"})
 
     for i in remove_list:
         context = fat_full[i]
