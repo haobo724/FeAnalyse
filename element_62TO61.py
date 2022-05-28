@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     intersection = np.intersect1d(intersection_61_surfFat, intersection_62_surfFat)
     print("\nThe intersection between intersection_61_surfFat and intersection_62_surfFat:\n", len(intersection))
-    assert len(intersection) ==
+    assert len(intersection) == 0
 
     tree = new_fe.read_xml(febfile_name)
 
