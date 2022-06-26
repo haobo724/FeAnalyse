@@ -13,12 +13,14 @@ test
 '''
 import argparse
 import pickle
-from save import save_pickle
-from bs4 import BeautifulSoup
 from xml.etree.ElementTree import ElementTree, Element
+
 import numpy as np
-from visualization import show_result
 import pydicom
+from bs4 import BeautifulSoup
+
+from save import save_pickle
+from visualization import show_result
 
 
 class FEmapping():
@@ -70,7 +72,7 @@ class FEmapping():
         print('Not found')
         return None
 
-    def get_id(self,data):
+    def get_id(self, data):
         id_set = []
         for e in data:
             if type(e) != type(data):
@@ -78,7 +80,6 @@ class FEmapping():
             id = e['id']
             id_set.append(id)
         return id_set
-
 
     def get_node_single_ele(self, data):
         element = {}
@@ -88,6 +89,7 @@ class FEmapping():
                 continue
             id = e['id']
             t = e.text.split(',')
+            t = list(map(lambda x: x.strip(), t))
             element.setdefault(f'{id}', t[:8])
             element_full.setdefault(f'{id}', t)
         return element, element_full
@@ -96,7 +98,15 @@ class FEmapping():
         soup = BeautifulSoup(data, 'xml')
         node = {}
         for link in soup.find_all('Nodes'):
-            if link['name'] == Breast_node_name:
+            try:
+                if link['name'] == Breast_node_name:
+                    for n in link:
+                        if type(n) != type(link):
+                            continue
+                        id = n['id']
+                        t = n.text.split(',')
+                        node.setdefault(f'{id}', t)
+            except KeyError:
                 for n in link:
                     if type(n) != type(link):
                         continue
@@ -141,6 +151,21 @@ class FEmapping():
             else:
                 self.Move_in_Tissue(element_index[0])
                 self.tissue_center.append(cord)
+
+    def get_center_from_element(self, element_dic, node_dic, cls='Fat'):
+        for element_index in element_dic.items():
+            cord = [0, 0, 0]
+            for single_node in element_index[1]:
+                temp = list(map(float, node_dic[single_node]))
+                cord = list(map(lambda x: x[0] + x[1], zip(cord, temp)))
+            # print(list(map(lambda x: x/8, cord)))
+            center_cord = list(map(lambda x: x / 8, cord))
+            if cls == 'Fat':
+                self.fat_center.append(cord)
+            else:
+                self.tissue_center.append(cord)
+
+
 
     def FatOR_Tissue(self, cord):
         thresh = self.thresh
@@ -254,11 +279,19 @@ class FEmapping():
         self.dicom_array = dicom_volumen.pixel_array
         self.dicom_array = np.moveaxis(self.dicom_array, 0, 2)
         self.PixelSpacing = head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['PixelSpacing'].value
-        self.SliceThickness = [head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['SliceThickness'].value]
+        self.SliceThickness = float([head[0x5200, 0x9230][0]['PixelMeasuresSequence'][0]['SliceThickness'].value][0])
         self.NumberofFrames = head[0x0028, 0x0008].value
         self.Rows = head[0x0028, 0x0010].value
         self.Columns = head[0x0028, 0x0011].value
         # self.dicom_array=(self.dicom_array/np.max(self.dicom_array))*255
+
+    def get_info(self, Name):
+        try:
+            info = self.__getattribute__(Name)
+        except:
+            raise AttributeError(f'No attribute named :{Name}')
+
+        return info
 
     def write(self, tree, out_path):
         '''''将xml文件写出
@@ -321,7 +354,7 @@ if __name__ == '__main__':
     save_pickle(fat_list, node_dic, element_dic_full, 'fat_node')
     save_pickle(tissue_list, node_dic, element_dic_full, 'tissue_node')
 
-    show_result("fat.pkl")
+    show_result("fat.pkl", vox=True)
     show_result("tissue.pkl")
     # step 4 : modify feb file
 

@@ -1,17 +1,25 @@
 import glob
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-import open3d
+import open3d as o3d
 import cv2
 
 def imgetoshow3DFast(imgcloudflatten):
-    point_cloud = open3d.geometry.PointCloud()
-    point_cloud.points = open3d.utility.Vector3dVector(imgcloudflatten)
-    open3d.visualization.draw_geometries([point_cloud])
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(imgcloudflatten)
+    point_cloud.scale(1 / np.max(point_cloud.get_max_bound() - point_cloud.get_min_bound()),
+              center=point_cloud.get_center())
+    o3d.visualization.draw_geometries([point_cloud])
 
+def imgetoshow3DVol(imgcloudflatten):
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(imgcloudflatten)
+    voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(input=point_cloud,
+                                                                   voxel_size=0.05)
+    o3d.visualization.draw_geometries([voxel_grid])
 
-def show_result(name='node_bad.pkl'):
+def show_result(name='node_bad.pkl',vox =False):
     with open(name, 'rb') as f:
         tst = pickle.load(f)
     a = []
@@ -39,10 +47,15 @@ def show_result(name='node_bad.pkl'):
     print(len(tst), 'elements shoule be', f"{part}")
     # print(np.max(cloud, axis=0))
     # print(np.min(cloud, axis=0))
-    imgetoshow3DFast(cloud)
+    if vox:
+        imgetoshow3DVol(cloud)
+        imgetoshow3DFast(cloud)
+    else:
+        imgetoshow3DFast(cloud)
+
 
 def fake_3d_breast():
-    point_cloud = open3d.geometry.PointCloud()
+    point_cloud = o3d.geometry.PointCloud()
     path = r'F:\Siemens\MA\Mini_study\N\mask\131_mask.tiff'
     paths = glob.glob(r'F:\Siemens\MA\Mini_study\N\mask\*.tiff')
     for path in paths:
@@ -58,12 +71,13 @@ def fake_3d_breast():
         cloud_A = [np.append(i,np.random.randint(100,200)) for i in points_A]
         cloud_B = [np.append(i,np.random.randint(90,150)) for i in points_B]
         cloud_A = np.array(cloud_A+cloud_B)
-        point_cloud.points = open3d.utility.Vector3dVector(cloud_A)
-        open3d.visualization.draw_geometries([point_cloud])
+        point_cloud.points = o3d.utility.Vector3dVector(cloud_A)
+
+        o3d.visualization.draw_geometries([point_cloud])
+        print('voxelization')
 
 if __name__ == '__main__':
-    fake_3d_breast()
-    # show_result()
+    pass
 
 
     
