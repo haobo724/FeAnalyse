@@ -1,5 +1,5 @@
-beautifulsoup4==4.10.0
-numpy==1.21.4
-open3d==0.13.0
-pydicom==2.2.2
+beautifulsoup4
+numpy
+open3d
+pydicom
 
