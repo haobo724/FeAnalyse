@@ -1,11 +1,11 @@
 import argparse
 import math
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 from read import FEmapping
+from visualization import imgetoshow3DFast
 SCALE = 1
 
 def test(save_path = 'recon',part = 'Fat',gray_value=255):
@@ -39,8 +39,8 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
             a.append(j)
 
     pointcloud_as_array = np.array(a) #shape is (7072, 3)
-
-
+    print(pointcloud_as_array.shape)
+    imgetoshow3DFast(pointcloud_as_array)
 
 
     pointcloud_as_array=np.around(pointcloud_as_array, 3)
@@ -55,13 +55,16 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     xyz_d  = distance/np.array([Rows,Columns,NumberofFrames])
     print('xyz_d',xyz_d)
     res, num = np.unique(pointcloud_as_array[:, 2], return_counts=True)
-    index = np.where(num > 500)
+    print(num)
+    _ = plt.hist(num, bins='auto')  # arguments are passed to np.histogram
+    plt.show()
+
+    index = np.where(num > 30)
     x_y_most = res[index]
     print("x_y_most",x_y_most)
 
 
-    # _ = plt.hist(pointcloud_as_array[:,2], bins='auto')  # arguments are passed to np.histogram
-    # plt.show()
+
     # print()
     # pointcloud_as_array = pointcloud_as_array/(pointcloud_as_array.max(axis=0))
     # pointcloud_as_array = pointcloud_as_array+abs(np.min(pointcloud_as_array,axis=0))
@@ -71,7 +74,11 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     # z_codinate = pointcloud_as_array[:,2]
 
     Z = np.min(pointcloud_as_array[:,2])
-    d = abs(res[index][0]-res[index][1])
+    gradient = np.gradient(x_y_most).mean()
+    print(gradient)
+    # d = abs(x_y_most[0]-x_y_most[1])
+    d = gradient*0.8
+    # d = 0.008
     print(Rows*SCALE,Columns*SCALE)
     slice_nr = 0
 
@@ -91,16 +98,17 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
         # X_codinate = (((final_pointcloud_array[:,0]+1)/2)*Rows)
         #
         # y_codinate = (((final_pointcloud_array[:,1]+1)/2)*Columns)
-        xy_codinate = final_pointcloud_array[:,:2]
+        # xy_codinate = final_pointcloud_array[:,:2]
         blank = np.zeros((Rows*SCALE,Columns*SCALE))
         y = np.arange(minium[1],maxium[1],xyz_d[1]/SCALE)
         x = np.arange(minium[0],maxium[0],xyz_d[0]/SCALE)
 
         for index1,i in enumerate(x[:Columns*SCALE]):
             for index2,j in  enumerate(y[:Rows*SCALE]):
-                pos  = (i,j)
-                distances = np.sqrt(np.sum(np.asarray(xy_codinate-pos) ** 2, axis=1))
-                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2):
+                pos  = (i,j,Z)
+                distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array-pos) ** 2, axis=1))
+                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2+xyz_d[2]**2):
+                # if np.min(distances) <= xyz_d[0]*2:
                     blank[index2, index1] = gray_value
         # plt.pause(0.1)
         # plt.imshow(blank)
@@ -137,8 +145,8 @@ def setup(args):
 
     '''
 
-    Fat_element = fe.get_Ele(feb_data, 'Part62')
-    Tissue_element = fe.get_Ele(feb_data, 'Part61')
+    Fat_element = fe.get_Ele(feb_data, 'Part2')
+    Tissue_element = fe.get_Ele(feb_data, 'Part1')
     Fat_element_dic, Fat_element_dic_full = fe.get_node_single_ele(Fat_element)
     Tissue_element_dic, Tissue_element_dic_full = fe.get_node_single_ele(Tissue_element)
     node_dic = fe.get_node_dic(feb_data, f'{Node_name}')
@@ -157,8 +165,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'breast_new_sg.feb')
-    parser.add_argument('--dcm_name', type=str, help='', default='Breast06_left.dcm')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'new/breast04_30_00sf.feb')
+    parser.add_argument('--dcm_name', type=str, help='', default='new/breast.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
 
