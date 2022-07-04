@@ -1,5 +1,5 @@
 import argparse
-import glob
+import math
 import os
 
 import matplotlib.pyplot as plt
@@ -39,22 +39,25 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
             a.append(j)
 
     pointcloud_as_array = np.array(a) #shape is (7072, 3)
+
+
+
+
     pointcloud_as_array=np.around(pointcloud_as_array, 3)
     # hist, bin_edges=np.histogram(pointcloud_as_array[:,2])
+    distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
+    print('distance1:', distance)
+    print('max ,min :', np.max(pointcloud_as_array, axis=0),np.min(pointcloud_as_array, axis=0))
+    maxium = np.max(pointcloud_as_array, axis=0)
+    minium = np.min(pointcloud_as_array, axis=0)
 
-    # print(np.max(pointcloud_as_array,axis=0),np.min(pointcloud_as_array,axis=0))
-    maxium = np.max(abs(pointcloud_as_array),axis=0)
-    pointcloud_as_array = pointcloud_as_array/maxium
-
-    distance = np.max(pointcloud_as_array,axis=0)-np.min(pointcloud_as_array,axis=0)
-
-    print(distance)
     xyz_d  = distance/np.array([Rows,Columns,NumberofFrames])
-    print(xyz_d)
+    print('xyz_d',xyz_d)
     res, num = np.unique(pointcloud_as_array[:, 2], return_counts=True)
     index = np.where(num > 500)
-    print(res[index])
+    x_y_most = res[index]
+    print("x_y_most",x_y_most)
 
 
     # _ = plt.hist(pointcloud_as_array[:,2], bins='auto')  # arguments are passed to np.histogram
@@ -68,11 +71,12 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     # z_codinate = pointcloud_as_array[:,2]
 
     Z = np.min(pointcloud_as_array[:,2])
-    print('Z:',Z)
-    d = 0.06
+    d = abs(res[index][0]-res[index][1])
     print(Rows*SCALE,Columns*SCALE)
     slice_nr = 0
-    while Z<2:
+
+
+    while Z<maxium[2]:
         final_pointcloud_array = []
         for point in pointcloud_as_array:
 
@@ -89,14 +93,14 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
         # y_codinate = (((final_pointcloud_array[:,1]+1)/2)*Columns)
         xy_codinate = final_pointcloud_array[:,:2]
         blank = np.zeros((Rows*SCALE,Columns*SCALE))
-        y = np.arange(0,2,xyz_d[0]/SCALE)-1
-        x = np.arange(0,2,xyz_d[1]/SCALE)-1
+        y = np.arange(minium[1],maxium[1],xyz_d[1]/SCALE)
+        x = np.arange(minium[0],maxium[0],xyz_d[0]/SCALE)
 
         for index1,i in enumerate(x[:Columns*SCALE]):
             for index2,j in  enumerate(y[:Rows*SCALE]):
                 pos  = (i,j)
                 distances = np.sqrt(np.sum(np.asarray(xy_codinate-pos) ** 2, axis=1))
-                if np.min(distances) <= xyz_d[0]*2:
+                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2):
                     blank[index2, index1] = gray_value
         # plt.pause(0.1)
         # plt.imshow(blank)
@@ -111,28 +115,13 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
             f.write(blank)
         Z+=xyz_d[2]
         slice_nr+=1
-    # Create Open3D point cloud object from array
-    # final_pointcloud = o3d.geometry.PointCloud()
-    # final_pointcloud.points = o3d.utility.Vector3dVector(final_pointcloud_array)
-    # voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(input=final_pointcloud,
-    #                                                                voxel_size=xyz_d[0])
-    # o3d.visualization.draw_geometries([voxel_grid])
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window()
-    # vis.get_render_option().point_color_option = o3d.visualization.PointColorOption.Color
-    # vis.get_render_option().point_size = 5.0
-    # vis.add_geometry(voxel_grid)
-    # vis.capture_screen_image("file.raw", do_render=True)
-    # vis.destroy_window()
 
-    # imgetoshow3DFast(pointcloud_as_array)
 
 def setup(args):
     # step 1 : initialize all name parameters
     febfile_name = args.febfile_name
     dcm_name = args.dcm_name
     Node_name = args.Node_name
-    mat_name = args.mat_name
 
     with open(febfile_name, "rb") as f:
         feb_data = f.read()
