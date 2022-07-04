@@ -1,12 +1,14 @@
 import argparse
 import glob
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 from read import FEmapping
 SCALE = 1
 
-def test(save_path = 'recon',part = 'Fat'):
+def test(save_path = 'recon',part = 'Fat',gray_value=255):
     reader = FEmapping()
     reader.read_dicom(r'Breast06_left.dcm')
     PixelSpacing = reader.get_info('PixelSpacing')
@@ -69,7 +71,7 @@ def test(save_path = 'recon',part = 'Fat'):
     print('Z:',Z)
     d = 0.06
     print(Rows*SCALE,Columns*SCALE)
-    # plt.ion()
+    slice_nr = 0
     while Z<2:
         final_pointcloud_array = []
         for point in pointcloud_as_array:
@@ -95,7 +97,7 @@ def test(save_path = 'recon',part = 'Fat'):
                 pos  = (i,j)
                 distances = np.sqrt(np.sum(np.asarray(xy_codinate-pos) ** 2, axis=1))
                 if np.min(distances) <= xyz_d[0]*2:
-                    blank[index2, index1] = 255
+                    blank[index2, index1] = gray_value
         # plt.pause(0.1)
         # plt.imshow(blank)
         # plt.show()
@@ -104,10 +106,11 @@ def test(save_path = 'recon',part = 'Fat'):
         # blank.tobytes()
         # blank.tofile('recon2/'+str(Z)+'.raw')
         # imageio.imsave('recon2/'+str(Z)+'.raw',blank)
-        with open(f'{save_path}/'+str(Z)+'.raw', 'wb') as f:
+        name = os.path.join(save_path,str(slice_nr)+'.raw')
+        with open(name, 'wb') as f:
             f.write(blank)
         Z+=xyz_d[2]
-
+        slice_nr+=1
     # Create Open3D point cloud object from array
     # final_pointcloud = o3d.geometry.PointCloud()
     # final_pointcloud.points = o3d.utility.Vector3dVector(final_pointcloud_array)
@@ -172,7 +175,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     print(args)
-    # setup(args)
-
-    test(save_path='recon',part='Fat')
-    test(save_path='recon2',part='Tissue')
+    setup(args)
+    save_path_Fat = 'recon_Fat'
+    save_path_Tissue = 'recon_Tissue'
+    if not os.path.exists(save_path_Fat):
+        os.mkdir(save_path_Fat)
+    if not os.path.exists(save_path_Tissue):
+        os.mkdir(save_path_Tissue)
+    test(save_path=save_path_Fat,part='Fat',gray_value =255)
+    test(save_path=save_path_Tissue,part='Tissue',gray_value =128)
