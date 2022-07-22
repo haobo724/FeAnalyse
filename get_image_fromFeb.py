@@ -58,8 +58,9 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     print(num)
     _ = plt.hist(num, bins='auto')  # arguments are passed to np.histogram
     plt.show()
-
-    index = np.where(num > 30)
+    thresh = np.mean(num)
+    print('group thresh:',thresh)
+    index = np.where(num > thresh)
     x_y_most = res[index]
     print("x_y_most",x_y_most)
 
@@ -114,7 +115,7 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
         # plt.imshow(blank)
         # plt.show()
         # cv2.imwrite('recon2/'+str(Z)+'.jpg',blank)
-        blank = blank.astype(np.uint16)
+        blank = blank.astype(np.uint8)
         # blank.tobytes()
         # blank.tofile('recon2/'+str(Z)+'.raw')
         # imageio.imsave('recon2/'+str(Z)+'.raw',blank)
@@ -165,8 +166,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'new/breast04_30_00sf.feb')
-    parser.add_argument('--dcm_name', type=str, help='', default='new/breast.dcm')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_133.feb')
+    parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
 
