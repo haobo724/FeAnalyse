@@ -8,9 +8,9 @@ from read import FEmapping
 from visualization import imgetoshow3DFast
 SCALE = 1
 
-def test(save_path = 'recon',part = 'Fat',gray_value=255):
+def test(save_path = 'recon',part = 'Fat',gray_value=255,dicom_path =''):
     reader = FEmapping()
-    reader.read_dicom(r'Breast06_left.dcm')
+    reader.read_dicom(dicom_path)
     PixelSpacing = reader.get_info('PixelSpacing')
     SliceThickness = reader.get_info('SliceThickness')
     NumberofFrames=reader.get_info('NumberofFrames')
@@ -111,14 +111,9 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
                 if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2+xyz_d[2]**2):
                 # if np.min(distances) <= xyz_d[0]*2:
                     blank[index2, index1] = gray_value
-        # plt.pause(0.1)
-        # plt.imshow(blank)
-        # plt.show()
-        # cv2.imwrite('recon2/'+str(Z)+'.jpg',blank)
+
         blank = blank.astype(np.uint8)
-        # blank.tobytes()
-        # blank.tofile('recon2/'+str(Z)+'.raw')
-        # imageio.imsave('recon2/'+str(Z)+'.raw',blank)
+
         name = os.path.join(save_path,str(slice_nr)+'.raw')
         with open(name, 'wb') as f:
             f.write(blank)
@@ -180,5 +175,5 @@ if __name__ == '__main__':
         os.mkdir(save_path_Fat)
     if not os.path.exists(save_path_Tissue):
         os.mkdir(save_path_Tissue)
-    test(save_path=save_path_Fat,part='Fat',gray_value =255)
-    test(save_path=save_path_Tissue,part='Tissue',gray_value =128)
+    test(save_path=save_path_Fat,part='Fat',gray_value =255,dicom_path=args.dcm_name)
+    test(save_path=save_path_Tissue,part='Tissue',gray_value =128,dicom_path=args.dcm_name)
