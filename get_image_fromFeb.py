@@ -10,7 +10,7 @@ SCALE = 1
 
 def test(save_path = 'recon',part = 'Fat',gray_value=255):
     reader = FEmapping()
-    reader.read_dicom(r'Breast06_left.dcm')
+    reader.read_dicom('new/Breast06_left.dcm')
     PixelSpacing = reader.get_info('PixelSpacing')
     SliceThickness = reader.get_info('SliceThickness')
     NumberofFrames=reader.get_info('NumberofFrames')
@@ -43,7 +43,7 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     imgetoshow3DFast(pointcloud_as_array)
 
 
-    pointcloud_as_array=np.around(pointcloud_as_array, 3)
+    pointcloud_as_array=np.around(pointcloud_as_array, 5)
     # hist, bin_edges=np.histogram(pointcloud_as_array[:,2])
     distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
@@ -58,9 +58,8 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     print(num)
     _ = plt.hist(num, bins='auto')  # arguments are passed to np.histogram
     plt.show()
-    thresh = np.mean(num)
-    print('group thresh:',thresh)
-    index = np.where(num > thresh)
+
+    index = np.where(num > 40)
     x_y_most = res[index]
     print("x_y_most",x_y_most)
 
@@ -78,7 +77,7 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
     gradient = np.gradient(x_y_most).mean()
     print(gradient)
     # d = abs(x_y_most[0]-x_y_most[1])
-    d = gradient*0.8
+    d = gradient
     # d = 0.008
     print(Rows*SCALE,Columns*SCALE)
     slice_nr = 0
@@ -108,14 +107,14 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255):
             for index2,j in  enumerate(y[:Rows*SCALE]):
                 pos  = (i,j,Z)
                 distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array-pos) ** 2, axis=1))
-                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2+xyz_d[2]**2):
+                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2+xyz_d[2]**2)*1.15:
                 # if np.min(distances) <= xyz_d[0]*2:
                     blank[index2, index1] = gray_value
         # plt.pause(0.1)
         # plt.imshow(blank)
         # plt.show()
         # cv2.imwrite('recon2/'+str(Z)+'.jpg',blank)
-        blank = blank.astype(np.uint8)
+        blank = blank.astype(np.uint16)
         # blank.tobytes()
         # blank.tofile('recon2/'+str(Z)+'.raw')
         # imageio.imsave('recon2/'+str(Z)+'.raw',blank)
@@ -166,8 +165,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_133.feb')
-    parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'new/breast_new_sg_40.feb')
+    parser.add_argument('--dcm_name', type=str, help='', default='new/Breast06_left.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
 
