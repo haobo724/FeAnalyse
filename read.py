@@ -35,9 +35,13 @@ class FEmapping():
         self.NumberofFrames = None
         self.fat_center = []
         self.tissue_center = []
+        self.fat_ecke= []
+        self.tissue_ecke =[]
         self.xyz_spacing = []
         self.breast_name = ''
         self.thresh = 200
+
+
 
     def get_Part_index(self, text, matname='breast'):
         soup = BeautifulSoup(text, 'xml')
@@ -126,7 +130,6 @@ class FEmapping():
         cloud = np.array(cord_node)
         max = np.max(cloud, axis=0)
         min = np.min(cloud, axis=0)
-        # min[1:]=0
         xyz_range = max - min
         range = np.where(self.dicom_array > 0)
         x = np.max(range[0]) - np.min(range[0])
@@ -147,24 +150,45 @@ class FEmapping():
             result = self.FatOR_Tissue(center_cord)
             if result:
                 self.Move_in_Fat(element_index[0])
-                self.fat_center.append(cord)
+                self.fat_center.append(center_cord)
             else:
                 self.Move_in_Tissue(element_index[0])
-                self.tissue_center.append(cord)
+                self.tissue_center.append(center_cord)
 
     def get_center_from_element(self, element_dic, node_dic, cls='Fat'):
         for element_index in element_dic.items():
             cord = [0, 0, 0]
+            # print(element_index)
             for single_node in element_index[1]:
                 temp = list(map(float, node_dic[single_node]))
+                # print(temp)
+                # input()
                 cord = list(map(lambda x: x[0] + x[1], zip(cord, temp)))
             # print(list(map(lambda x: x/8, cord)))
             center_cord = list(map(lambda x: x / 8, cord))
             if cls == 'Fat':
-                self.fat_center.append(cord)
+                self.fat_center.append(center_cord)
             else:
-                self.tissue_center.append(cord)
+                self.tissue_center.append(center_cord)
 
+    def get_eckePoint_from_element(self, element_dic, node_dic, cls='Fat'):
+        for element_index in element_dic.items():
+            # print(element_index)
+            cord = [0,0,0]
+            for single_node in element_index[1]:
+                temp = list(map(float, node_dic[single_node]))
+                cord = list(map(lambda x: x[0] + x[1], zip(cord, temp)))
+
+                if cls == 'Fat':
+                    self.fat_ecke.append(temp)
+                else:
+                    self.tissue_ecke.append(temp)
+            center_cord = list(map(lambda x: x / 8, cord))
+            if cls == 'Fat':
+                self.fat_center.append(center_cord)
+            else:
+                self.tissue_center.append(center_cord)
+            # print(list(map(lambda x: x/8, cord)))
 
 
     def FatOR_Tissue(self, cord):
@@ -175,10 +199,7 @@ class FEmapping():
             c0 = min(pixel_cord[1] + self.Rows // 2, self.dicom_array.shape[0] - 1)
             c1 = min(pixel_cord[0] + self.Columns // 2, self.dicom_array.shape[1] - 1)
             c2 = min(pixel_cord[2] + self.NumberofFrames // 2, self.dicom_array.shape[2] - 1)
-            # c0=min(pixel_cord[1]  -self.Rows,self.dicom_array.shape[0]-1)
-            # c1=min(pixel_cord[0] -self.Columns,self.dicom_array.shape[1]-1)
-            # c2=min(pixel_cord[2]-self.NumberofFrames//2,self.dicom_array.shape[2]-1)
-            # print(c0,c1,c2)
+
 
             gray_value = self.dicom_array[c0, c1, c2]
         except:
@@ -304,7 +325,8 @@ class FEmapping():
 
     def get_center(self):
         return self.fat_center, self.tissue_center
-
+    def get_ecke(self):
+        return self.fat_ecke, self.tissue_ecke
 
 if __name__ == '__main__':
 
