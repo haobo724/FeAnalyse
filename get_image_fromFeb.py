@@ -1,20 +1,36 @@
 import argparse
 import math
 import os
-import matplotlib.pyplot as plt
-import numpy as np
 import pickle
 
-from sklearn.cluster import MiniBatchKMeans
+import matplotlib.pyplot as plt
+import numpy as np
+import tqdm
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 from read import FEmapping
 from visualization import imgetoshow3DFast
+
 SCALE = 1
+
+
 def do_cluster(im_flatten, num_bins):
-    # cluster = KMeans(n_clusters=num_bins)
-    cluster = MiniBatchKMeans(n_clusters=num_bins, batch_size=2048)
+    cluster = KMeans(n_clusters=num_bins, random_state=0)
+    # cluster = MiniBatchKMeans(n_clusters=num_bins, batch_size=2048)
     cluster.fit(im_flatten)
     return cluster
+
+
+def find_best_k(data):
+    intera = []
+    value = data.reshape(-1, 1)
+    value_s = StandardScaler().fit_transform(value)
+    for k in range(120, 250):
+        cluster_z = do_cluster(value_s, num_bins=k)
+        intera.append(np.sqrt(cluster_z.inertia_))
+    plt.plot(range(120, 250), intera, 'o-')
+    plt.show()
 
 
 def centroid_histogram(clt):
@@ -28,21 +44,21 @@ def centroid_histogram(clt):
 
     # return the histogram
     return hist
-def test(save_path = 'recon',part = 'Fat',gray_value=255,dicom_path =''):
+
+
+def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     reader = FEmapping()
     reader.read_dicom(dicom_path)
-    PixelSpacing = reader.get_info('PixelSpacing')
-    SliceThickness = reader.get_info('SliceThickness')
-    NumberofFrames=reader.get_info('NumberofFrames')
-    Rows=reader.get_info('Rows')
-    Columns=reader.get_info('Columns' )
-    PixelSpacing.append(SliceThickness)
-
-    print('NumberofFrames:',NumberofFrames)
+    # PixelSpacing = reader.get_info('PixelSpacing')
+    # SliceThickness = reader.get_info('SliceThickness')
+    # NumberofFrames = reader.get_info('NumberofFrames')
+    # Rows = reader.get_info('Rows')
+    # Columns = reader.get_info('Columns')
+    # PixelSpacing.append(SliceThickness)
+    dicom_array = reader.get_info('dicom_array')
 
     with open('Fat_new.pkl', 'rb') as f:
         fat = pickle.load(f)
-
 
     with open('Tissue_new.pkl', 'rb') as f:
         tissue = pickle.load(f)
@@ -58,81 +74,133 @@ def test(save_path = 'recon',part = 'Fat',gray_value=255,dicom_path =''):
             j = list(float(i) for i in j)
             a.append(j)
 
-    pointcloud_as_array = np.array(a) #shape is (7072, 3)
+    pointcloud_as_array = np.array(a)  # shape is (7072, 3)
+    imgetoshow3DFast(pointcloud_as_array)
+    temp = pointcloud_as_array.copy()
+
+    pointcloud_as_array[:, 0] = temp[:, 2]
+    pointcloud_as_array[:, 1] = temp[:, 1]
+    pointcloud_as_array[:, 2] = temp[:, 0]
+
+    volume = np.where(dicom_array > 0)
+    x = np.max(volume[0]) - np.min(volume[0]) + 1
+    y = np.max(volume[1]) - np.min(volume[1]) + 1
+    z = np.max(volume[2]) - np.min(volume[2]) + 1
+    print('volume :"', x, y, z)
     print(pointcloud_as_array.shape)
+    Rows, Columns, NumberofFrames = y, x, z
+
     imgetoshow3DFast(pointcloud_as_array)
 
-
-    pointcloud_as_array=np.around(pointcloud_as_array, 3)
-    # hist, bin_edges=np.histogram(pointcloud_as_array[:,2])
     distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
-    print('distance1:', distance)
-    print('max ,min :', np.max(pointcloud_as_array, axis=0),np.min(pointcloud_as_array, axis=0))
+    print('distance:', distance)
     maxium = np.max(pointcloud_as_array, axis=0)
     minium = np.min(pointcloud_as_array, axis=0)
+    print('max ,min :', maxium, minium)
 
-    xyz_d  = distance/np.array([Rows,Columns,NumberofFrames])
-    print('xyz_d',xyz_d)
+    xyz_d = distance / np.array([Rows, Columns, NumberofFrames])
+    print('xyz_d', xyz_d)
 
+    cluster_z = do_cluster(pointcloud_as_array[:, 2].reshape(-1, 1), num_bins=NumberofFrames)
+    # cluster_z_rank = cluster_z.cluster_centers_.argsort(axis=0)
+    center_z = sorted(cluster_z.cluster_centers_)
+    center_z = np.array(center_z).reshape(-1)
 
+    cluster_y = do_cluster(pointcloud_as_array[:, 1].reshape(-1, 1), num_bins=Rows)
+    # cluster_y_rank = cluster_y.cluster_centers_.argsort(axis=0)
+    center_y = sorted(cluster_y.cluster_centers_)
+    center_y = np.array(center_y).reshape(-1)
 
+    cluster_x = do_cluster(pointcloud_as_array[:, 0].reshape(-1, 1), num_bins=Columns)
+    cluster_x_rank = np.argsort(cluster_x.cluster_centers_, axis=0)
+    center_x = sorted(cluster_x.cluster_centers_)
+    center_x = np.array(center_x).reshape(-1)
 
+    new_point = []
+    if not os.path.exists('new_poin-t.pkl'):
 
-    # print()
-    # pointcloud_as_array = pointcloud_as_array/(pointcloud_as_array.max(axis=0))
-    # pointcloud_as_array = pointcloud_as_array+abs(np.min(pointcloud_as_array,axis=0))
-    # pointcloud_as_array = pointcloud_as_array*[1.08435303, 0.88868057, 0.57180586]
-    # X_codinate = pointcloud_as_array[:,0]/ pointcloud_as_array[:,0].max()
-    # y_codinate = pointcloud_as_array[:,1]
-    # z_codinate = pointcloud_as_array[:,2]
+        for point in tqdm.tqdm(pointcloud_as_array):
+            x, y, z = point
+            result1 = cluster_x.predict(x.reshape(1, -1))[0]
+            # result1= cluster_x_rank[result1]
+            p1 = cluster_x.cluster_centers_[result1][0]
+            print(x, p1)
+            result2 = cluster_y.predict(y.reshape(1, -1))[0]
+            # result2= cluster_y_rank[result2]
 
-    cluster = do_cluster(pointcloud_as_array[:, 2].reshape(-1, 1), num_bins=NumberofFrames)
-    # print(cluster.cluster_centers_)
-    # print(center.shape)
-    center = sorted(cluster.cluster_centers_)
-    center = np.array(center).reshape(-1)
+            p2 = cluster_y.cluster_centers_[result2][0]
 
-    d = np.gradient(center).mean()
-    print('d:', d)
-    print(Rows*SCALE,Columns*SCALE)
+            result3 = cluster_z.predict(z.reshape(1, -1))[0]
+            # result3= cluster_z_rank[result3]
+
+            p3 = cluster_z.cluster_centers_[result3][0]
+            # print(p1,p2,p3)
+            # print(result1,result2,result3)
+            # new_point.append([result1,result2,result3])
+            new_point.append([p1, p2, p3])
+
+        new_point = np.array(new_point)
+        print('done')
+        with open("new_point.pkl", 'wb') as f:
+            pickle.dump(new_point, f)
+    else:
+        with open('new_point.pkl', 'rb') as f:
+            new_point = pickle.load(f)
+        print('new_point loaded')
+
+    # index 方法
+    # bb = np.zeros([int(x)+1,int(y)+1,int(z)+1])
+    #
+    # for i in tqdm.tqdm(new_point):
+    #     x1,y1,z1 = i
+    #     bb[x1,y1,z1] =gray_value
+
+    # for idx in range(bb.shape[2]):
+    #
+    #     name = os.path.join(save_path, str(slice_nr) + '.raw')
+    #     with open(name, 'wb') as f:
+    #         f.write(bb[:,:,idx])
+
+    pointcloud_as_array = new_point.copy()
+
+    dz = np.gradient(center_z).mean()
+    dx = np.gradient(center_x).mean()
+    dy = np.gradient(center_y).mean()
+    print('d:', dz, dx, dy)
+    print(Rows * SCALE, Columns * SCALE)
     slice_nr = 0
 
-
-    for Z in center:
+    for Z in tqdm.tqdm(center_z):
         final_pointcloud_array = []
         for point in pointcloud_as_array:
 
-            if Z - d/2 <= point[2] and point[2] <= Z + d/2:
+            if point[2] == Z:
                 final_pointcloud_array.append(point)
-        final_pointcloud_array = np.array(final_pointcloud_array) #shape is (7072, 3)
+        final_pointcloud_array = np.array(final_pointcloud_array)  # shape is (7072, 3)
+        final_pointcloud_array = final_pointcloud_array[:, :2]
         if not len(final_pointcloud_array):
             print(final_pointcloud_array.shape)
-            Z += d
             continue
 
-        # X_codinate = (((final_pointcloud_array[:,0]+1)/2)*Rows)
-        #
-        # y_codinate = (((final_pointcloud_array[:,1]+1)/2)*Columns)
-        # xy_codinate = final_pointcloud_array[:,:2]
-        blank = np.zeros((Rows*SCALE,Columns*SCALE))
-        y = np.arange(minium[1],maxium[1],xyz_d[1]/SCALE)
-        x = np.arange(minium[0],maxium[0],xyz_d[0]/SCALE)
+        blank = np.zeros((Rows * SCALE, Columns * SCALE))
+        x = np.arange(minium[0], maxium[0], dx / SCALE)
+        y = np.arange(minium[1], maxium[1], dy / SCALE)
 
-        for index1,i in enumerate(x[:Columns*SCALE]):
-            for index2,j in  enumerate(y[:Rows*SCALE]):
-                pos  = (i,j,Z)
-                distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array-pos) ** 2, axis=1))
-                if np.min(distances) <= math.sqrt( xyz_d[0]**2+ xyz_d[1]**2+xyz_d[2]**2):
-                # if np.min(distances) <= xyz_d[0]*2:
+        for index1, i in enumerate(x[:Columns * SCALE]):
+            for index2, j in enumerate(y[:Rows * SCALE]):
+                pos = (i, j)
+                distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array - pos) ** 2, axis=1))
+                if np.min(distances) <= math.sqrt(dx ** 2 + dy * 2) * 1.1:
+                    # if np.min(distances) <= xyz_d[0]*2:
                     blank[index2, index1] = gray_value
 
         blank = blank.astype(np.uint8)
 
-        name = os.path.join(save_path,str(slice_nr)+'.raw')
+        name = os.path.join(save_path, str(slice_nr) + '.raw')
         with open(name, 'wb') as f:
             f.write(blank)
-        slice_nr+=1
+        slice_nr += 1
 
 
 def setup(args):
@@ -172,8 +240,6 @@ def setup(args):
 
 if __name__ == '__main__':
 
-
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_133.feb')
     parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
@@ -189,5 +255,5 @@ if __name__ == '__main__':
         os.mkdir(save_path_Fat)
     if not os.path.exists(save_path_Tissue):
         os.mkdir(save_path_Tissue)
-    test(save_path=save_path_Fat,part='Fat',gray_value =255,dicom_path=args.dcm_name)
-    test(save_path=save_path_Tissue,part='Tissue',gray_value =128,dicom_path=args.dcm_name)
+    test(save_path=save_path_Fat, part='Fat', gray_value=255, dicom_path=args.dcm_name)
+    test(save_path=save_path_Tissue, part='Tissue', gray_value=128, dicom_path=args.dcm_name)
