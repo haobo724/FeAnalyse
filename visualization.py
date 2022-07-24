@@ -10,7 +10,18 @@ def imgetoshow3DFast(imgcloudflatten):
     point_cloud.points = o3d.utility.Vector3dVector(imgcloudflatten)
     point_cloud.scale(1 / np.max(point_cloud.get_max_bound() - point_cloud.get_min_bound()),
               center=point_cloud.get_center())
-    o3d.visualization.draw_geometries([point_cloud])
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+    vis.add_geometry(point_cloud)
+    o3d.visualization.ViewControl.set_zoom(vis.get_view_control(), 0.8)
+    # o3d.visualization.ViewControl.set_lookat(vis.get_view_control(), np.array([0.0,1.0,0.0]))
+    # o3d.visualization.ViewControl.set_up(vis.get_view_control(), np.array([0.0,1.0,0.0]))
+    # o3d.visualization.ViewControl.set_front(vis.get_view_control(), np.array([0.0,1.0,0.0]))
+
+    vis.run()
+    # o3d.visualization.draw_geometries([point_cloud],
+    #                               lookat=np.array([0.0,0.0,0.0],dtype=np.float64))
+
 
 def imgetoshow3DVol(imgcloudflatten):
     point_cloud = o3d.geometry.PointCloud()
