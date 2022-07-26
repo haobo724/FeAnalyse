@@ -99,20 +99,54 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     minium = np.min(pointcloud_as_array, axis=0)
     pointcloud_as_array -= minium
     maxium = np.max(pointcloud_as_array, axis=0)
+    minium = np.min(pointcloud_as_array, axis=0)
 
     print('max ,min :', maxium, minium)
-    grad_shape = np.around(maxium*300*1.5).astype(int)
-    print(grad_shape)
 
-    grid_3d = np.zeros((grad_shape),dtype=np.uint8)
-    print(grid_3d.shape)
-    for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
-        x,y,z =np.around(p*350).astype(np.uint8)
-        grid_3d[x,y,z]=255
 
-    for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
-        x,y,z =np.around(p*350).astype(np.uint8)
-        grid_3d[x,y,z]=128
+    abstand_thresh = 0.001
+    x=y=z =np.arange(0,np.around(max(maxium),2),abstand_thresh)
+    print(x)
+    mesh_x,mesh_y,mesh_z = np.meshgrid(x,y,z)
+    ratio = 1/len(x)
+    input()
+    # grid_3d = np.zeros((1/abstand_thresh,1/abstand_thresh,1/abstand_thresh))
+    grid_3d = np.zeros((150,150,150))
+    for i in tqdm.tqdm(range(150)):
+        for j in range(150):
+            for k in range(150):
+                coord = np.array([i,j,k])*ratio
+                distances = np.sqrt(np.sum(np.asarray(pointcloud_as_array - coord) ** 2, axis=1))
+                if np.min(distances)<abstand_thresh*5:
+                    idx = np.argmin(distances)
+                    if idx <thresh_idx:
+                        grid_3d[i,j,k]=255
+                    else:
+                        grid_3d[i,j,k]=128
+
+                else:
+                    grid_3d[i,j,k]=0
+
+    # cont, result = np.unique(np.around(pointcloud_as_array), return_counts=True)
+    #
+    # print(len(pointcloud_as_array))
+    # print(len(result))
+    #
+    #
+    #
+    # grad_shape = np.around(maxium).astype(int)
+    # print(grad_shape)
+    #
+    # print(grid_3d.shape)
+    #
+    # input()
+    # for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
+    #     x,y,z =np.around(p).astype(np.uint8)
+    #     grid_3d[x,y,z]=128
+    #
+    # for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
+    #     x,y,z =np.around(p).astype(np.uint8)
+    #     grid_3d[x,y,z]+=64
 
     slice_nr=0
 
@@ -130,109 +164,109 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
 
 
 
-
-    xyz_d = distance / np.array([Rows, Columns, NumberofFrames])
-    print('xyz_d', xyz_d)
-
-    cluster_z = do_cluster(pointcloud_as_array[:, 2].reshape(-1, 1), num_bins=NumberofFrames)
-    # cluster_z_rank = cluster_z.cluster_centers_.argsort(axis=0)
-    center_z = sorted(cluster_z.cluster_centers_)
-    center_z = np.array(center_z).reshape(-1)
-
-    cluster_y = do_cluster(pointcloud_as_array[:, 1].reshape(-1, 1), num_bins=Rows)
-    # cluster_y_rank = cluster_y.cluster_centers_.argsort(axis=0)
-    center_y = sorted(cluster_y.cluster_centers_)
-    center_y = np.array(center_y).reshape(-1)
-
-    cluster_x = do_cluster(pointcloud_as_array[:, 0].reshape(-1, 1), num_bins=Columns)
-    cluster_x_rank = np.argsort(cluster_x.cluster_centers_, axis=0)
-    center_x = sorted(cluster_x.cluster_centers_)
-    center_x = np.array(center_x).reshape(-1)
-
-    new_point = []
-    if not os.path.exists('new_poin-t.pkl'):
-
-        for point in tqdm.tqdm(pointcloud_as_array):
-            x, y, z = point
-            result1 = cluster_x.predict(x.reshape(1, -1))[0]
-            # result1= cluster_x_rank[result1]
-            p1 = cluster_x.cluster_centers_[result1][0]
-            print(x, p1)
-            result2 = cluster_y.predict(y.reshape(1, -1))[0]
-            # result2= cluster_y_rank[result2]
-
-            p2 = cluster_y.cluster_centers_[result2][0]
-
-            result3 = cluster_z.predict(z.reshape(1, -1))[0]
-            # result3= cluster_z_rank[result3]
-
-            p3 = cluster_z.cluster_centers_[result3][0]
-            # print(p1,p2,p3)
-            # print(result1,result2,result3)
-            # new_point.append([result1,result2,result3])
-            new_point.append([p1, p2, p3])
-
-        new_point = np.array(new_point)
-        print('done')
-        with open("new_point.pkl", 'wb') as f:
-            pickle.dump(new_point, f)
-    else:
-        with open('new_point.pkl', 'rb') as f:
-            new_point = pickle.load(f)
-        print('new_point loaded')
-
-    # index 方法
-    # bb = np.zeros([int(x)+1,int(y)+1,int(z)+1])
     #
-    # for i in tqdm.tqdm(new_point):
-    #     x1,y1,z1 = i
-    #     bb[x1,y1,z1] =gray_value
-
-    # for idx in range(bb.shape[2]):
+    # xyz_d = distance / np.array([Rows, Columns, NumberofFrames])
+    # print('xyz_d', xyz_d)
+    #
+    # cluster_z = do_cluster(pointcloud_as_array[:, 2].reshape(-1, 1), num_bins=NumberofFrames)
+    # # cluster_z_rank = cluster_z.cluster_centers_.argsort(axis=0)
+    # center_z = sorted(cluster_z.cluster_centers_)
+    # center_z = np.array(center_z).reshape(-1)
+    #
+    # cluster_y = do_cluster(pointcloud_as_array[:, 1].reshape(-1, 1), num_bins=Rows)
+    # # cluster_y_rank = cluster_y.cluster_centers_.argsort(axis=0)
+    # center_y = sorted(cluster_y.cluster_centers_)
+    # center_y = np.array(center_y).reshape(-1)
+    #
+    # cluster_x = do_cluster(pointcloud_as_array[:, 0].reshape(-1, 1), num_bins=Columns)
+    # cluster_x_rank = np.argsort(cluster_x.cluster_centers_, axis=0)
+    # center_x = sorted(cluster_x.cluster_centers_)
+    # center_x = np.array(center_x).reshape(-1)
+    #
+    # new_point = []
+    # if not os.path.exists('new_poin-t.pkl'):
+    #
+    #     for point in tqdm.tqdm(pointcloud_as_array):
+    #         x, y, z = point
+    #         result1 = cluster_x.predict(x.reshape(1, -1))[0]
+    #         # result1= cluster_x_rank[result1]
+    #         p1 = cluster_x.cluster_centers_[result1][0]
+    #         print(x, p1)
+    #         result2 = cluster_y.predict(y.reshape(1, -1))[0]
+    #         # result2= cluster_y_rank[result2]
+    #
+    #         p2 = cluster_y.cluster_centers_[result2][0]
+    #
+    #         result3 = cluster_z.predict(z.reshape(1, -1))[0]
+    #         # result3= cluster_z_rank[result3]
+    #
+    #         p3 = cluster_z.cluster_centers_[result3][0]
+    #         # print(p1,p2,p3)
+    #         # print(result1,result2,result3)
+    #         # new_point.append([result1,result2,result3])
+    #         new_point.append([p1, p2, p3])
+    #
+    #     new_point = np.array(new_point)
+    #     print('done')
+    #     with open("new_point.pkl", 'wb') as f:
+    #         pickle.dump(new_point, f)
+    # else:
+    #     with open('new_point.pkl', 'rb') as f:
+    #         new_point = pickle.load(f)
+    #     print('new_point loaded')
+    #
+    # # index 方法
+    # # bb = np.zeros([int(x)+1,int(y)+1,int(z)+1])
+    # #
+    # # for i in tqdm.tqdm(new_point):
+    # #     x1,y1,z1 = i
+    # #     bb[x1,y1,z1] =gray_value
+    #
+    # # for idx in range(bb.shape[2]):
+    # #
+    # #     name = os.path.join(save_path, str(slice_nr) + '.raw')
+    # #     with open(name, 'wb') as f:
+    # #         f.write(bb[:,:,idx])
+    #
+    # pointcloud_as_array = new_point.copy()
+    #
+    # dz = np.gradient(center_z).mean()
+    # dx = np.gradient(center_x).mean()
+    # dy = np.gradient(center_y).mean()
+    # print('d:', dz, dx, dy)
+    # print(Rows * SCALE, Columns * SCALE)
+    # slice_nr = 0
+    #
+    # for Z in tqdm.tqdm(center_z):
+    #     final_pointcloud_array = []
+    #     for point in pointcloud_as_array:
+    #
+    #         if point[2] == Z:
+    #             final_pointcloud_array.append(point)
+    #     final_pointcloud_array = np.array(final_pointcloud_array)  # shape is (7072, 3)
+    #     final_pointcloud_array = final_pointcloud_array[:, :2]
+    #     if not len(final_pointcloud_array):
+    #         print(final_pointcloud_array.shape)
+    #         continue
+    #
+    #     blank = np.zeros((Rows * SCALE, Columns * SCALE))
+    #     x = np.arange(minium[0], maxium[0], dx / SCALE)
+    #     y = np.arange(minium[1], maxium[1], dy / SCALE)
+    #
+    #     for index1, i in enumerate(x[:Columns * SCALE]):
+    #         for index2, j in enumerate(y[:Rows * SCALE]):
+    #             pos = (i, j)
+    #             distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array - pos) ** 2, axis=1))
+    #             if np.min(distances) <= math.sqrt(dx ** 2 + dy * 2) * 1.1:
+    #                 # if np.min(distances) <= xyz_d[0]*2:
+    #                 blank[index2, index1] = gray_value
+    #
+    #     blank = blank.astype(np.uint8)
     #
     #     name = os.path.join(save_path, str(slice_nr) + '.raw')
     #     with open(name, 'wb') as f:
-    #         f.write(bb[:,:,idx])
-
-    pointcloud_as_array = new_point.copy()
-
-    dz = np.gradient(center_z).mean()
-    dx = np.gradient(center_x).mean()
-    dy = np.gradient(center_y).mean()
-    print('d:', dz, dx, dy)
-    print(Rows * SCALE, Columns * SCALE)
-    slice_nr = 0
-
-    for Z in tqdm.tqdm(center_z):
-        final_pointcloud_array = []
-        for point in pointcloud_as_array:
-
-            if point[2] == Z:
-                final_pointcloud_array.append(point)
-        final_pointcloud_array = np.array(final_pointcloud_array)  # shape is (7072, 3)
-        final_pointcloud_array = final_pointcloud_array[:, :2]
-        if not len(final_pointcloud_array):
-            print(final_pointcloud_array.shape)
-            continue
-
-        blank = np.zeros((Rows * SCALE, Columns * SCALE))
-        x = np.arange(minium[0], maxium[0], dx / SCALE)
-        y = np.arange(minium[1], maxium[1], dy / SCALE)
-
-        for index1, i in enumerate(x[:Columns * SCALE]):
-            for index2, j in enumerate(y[:Rows * SCALE]):
-                pos = (i, j)
-                distances = np.sqrt(np.sum(np.asarray(final_pointcloud_array - pos) ** 2, axis=1))
-                if np.min(distances) <= math.sqrt(dx ** 2 + dy * 2) * 1.1:
-                    # if np.min(distances) <= xyz_d[0]*2:
-                    blank[index2, index1] = gray_value
-
-        blank = blank.astype(np.uint8)
-
-        name = os.path.join(save_path, str(slice_nr) + '.raw')
-        with open(name, 'wb') as f:
-            f.write(blank)
-        slice_nr += 1
+    #         f.write(blank)
+    #     slice_nr += 1
 
 
 def setup(args):
@@ -278,9 +312,10 @@ if __name__ == '__main__':
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
 
+
     args = parser.parse_args()
     print(args)
-    setup(args)
+    # setup(args)
     save_path_Fat = 'recon_Fat'
     save_path_Tissue = 'recon_Tissue'
     if not os.path.exists(save_path_Fat):
