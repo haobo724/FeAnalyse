@@ -63,41 +63,73 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     with open('Tissue_new.pkl', 'rb') as f:
         tissue = pickle.load(f)
     a = []
-
     if part == 'Fat':
         for k in fat:
             k = list(float(i) for i in k)
             a.append(k)
-
-    else:
-        for j in tissue:
-            j = list(float(i) for i in j)
-            a.append(j)
+    thresh_idx = len(a)
+    # else:
+    for j in tissue:
+        j = list(float(i) for i in j)
+        a.append(j)
 
     pointcloud_as_array = np.array(a)  # shape is (7072, 3)
-    imgetoshow3DFast(pointcloud_as_array)
     temp = pointcloud_as_array.copy()
+    imgetoshow3DFast(pointcloud_as_array)
+    # data = StandardScaler().fit_transform(temp[:, 2].reshape(-1, 1)).reshape(-1)
+    #
+    # pointcloud_as_array[:, 0] = data
+    # pointcloud_as_array[:, 1] = StandardScaler().fit_transform(temp[:, 1].reshape(-1, 1)).reshape(-1)
+    # pointcloud_as_array[:, 2] = StandardScaler().fit_transform(temp[:, 0].reshape(-1, 1)).reshape(-1)
 
-    pointcloud_as_array[:, 0] = temp[:, 2]
-    pointcloud_as_array[:, 1] = temp[:, 1]
-    pointcloud_as_array[:, 2] = temp[:, 0]
-
-    volume = np.where(dicom_array > 0)
-    x = np.max(volume[0]) - np.min(volume[0]) + 1
-    y = np.max(volume[1]) - np.min(volume[1]) + 1
-    z = np.max(volume[2]) - np.min(volume[2]) + 1
-    print('volume :"', x, y, z)
+    # volume = np.where(dicom_array > 0)
+    # x = np.max(volume[0]) - np.min(volume[0]) + 1
+    # y = np.max(volume[1]) - np.min(volume[1]) + 1
+    # z = np.max(volume[2]) - np.min(volume[2]) + 1
+    # print('volume :"', x, y, z)
     print(pointcloud_as_array.shape)
-    Rows, Columns, NumberofFrames = y, x, z
+    # Rows, Columns, NumberofFrames = y, x, z
 
     imgetoshow3DFast(pointcloud_as_array)
 
     distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
     print('distance:', distance)
-    maxium = np.max(pointcloud_as_array, axis=0)
+    # maxium = np.max(pointcloud_as_array, axis=0)
     minium = np.min(pointcloud_as_array, axis=0)
+    pointcloud_as_array -= minium
+    maxium = np.max(pointcloud_as_array, axis=0)
+
     print('max ,min :', maxium, minium)
+    grad_shape = np.around(maxium*300*1.5).astype(int)
+    print(grad_shape)
+
+    grid_3d = np.zeros((grad_shape),dtype=np.uint8)
+    print(grid_3d.shape)
+    for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
+        x,y,z =np.around(p*350).astype(np.uint8)
+        grid_3d[x,y,z]=255
+
+    for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
+        x,y,z =np.around(p*350).astype(np.uint8)
+        grid_3d[x,y,z]=128
+
+    slice_nr=0
+
+    for i in tqdm.tqdm(grid_3d):
+        name = os.path.join(save_path, str(slice_nr) + '.raw')
+        with open(name, 'wb') as f:
+            f.write(i)
+        slice_nr += 1
+    return
+
+
+
+
+
+
+
+
 
     xyz_d = distance / np.array([Rows, Columns, NumberofFrames])
     print('xyz_d', xyz_d)
@@ -241,14 +273,14 @@ def setup(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_133.feb')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_200.feb')
     parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
 
     args = parser.parse_args()
     print(args)
-    # setup(args)
+    setup(args)
     save_path_Fat = 'recon_Fat'
     save_path_Tissue = 'recon_Tissue'
     if not os.path.exists(save_path_Fat):
@@ -256,4 +288,4 @@ if __name__ == '__main__':
     if not os.path.exists(save_path_Tissue):
         os.mkdir(save_path_Tissue)
     test(save_path=save_path_Fat, part='Fat', gray_value=255, dicom_path=args.dcm_name)
-    test(save_path=save_path_Tissue, part='Tissue', gray_value=128, dicom_path=args.dcm_name)
+    # test(save_path=save_path_Tissue, part='Tissue', gray_value=128, dicom_path=args.dcm_name)
