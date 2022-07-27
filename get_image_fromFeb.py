@@ -1,5 +1,5 @@
 import argparse
-import math
+import cv2
 import os
 import pickle
 
@@ -74,8 +74,8 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
         a.append(j)
 
     pointcloud_as_array = np.array(a)  # shape is (7072, 3)
-    temp = pointcloud_as_array.copy()
-    imgetoshow3DFast(pointcloud_as_array)
+    # temp = pointcloud_as_array.copy()
+    # imgetoshow3DFast(pointcloud_as_array)
     # data = StandardScaler().fit_transform(temp[:, 2].reshape(-1, 1)).reshape(-1)
     #
     # pointcloud_as_array[:, 0] = data
@@ -90,7 +90,7 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     print(pointcloud_as_array.shape)
     # Rows, Columns, NumberofFrames = y, x, z
 
-    imgetoshow3DFast(pointcloud_as_array)
+    # imgetoshow3DFast(pointcloud_as_array)
 
     distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
@@ -103,29 +103,28 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
 
     print('max ,min :', maxium, minium)
 
-
-    abstand_thresh = 0.001
-    x=y=z =np.arange(0,np.around(max(maxium),2),abstand_thresh)
-    print(x)
-    mesh_x,mesh_y,mesh_z = np.meshgrid(x,y,z)
-    ratio = 1/len(x)
-    input()
-    # grid_3d = np.zeros((1/abstand_thresh,1/abstand_thresh,1/abstand_thresh))
-    grid_3d = np.zeros((150,150,150))
-    for i in tqdm.tqdm(range(150)):
-        for j in range(150):
-            for k in range(150):
-                coord = np.array([i,j,k])*ratio
-                distances = np.sqrt(np.sum(np.asarray(pointcloud_as_array - coord) ** 2, axis=1))
-                if np.min(distances)<abstand_thresh*5:
-                    idx = np.argmin(distances)
-                    if idx <thresh_idx:
-                        grid_3d[i,j,k]=255
-                    else:
-                        grid_3d[i,j,k]=128
-
-                else:
-                    grid_3d[i,j,k]=0
+    # abstand_thresh = 0.001
+    # x=y=z =np.arange(0,np.around(max(maxium),2),abstand_thresh)
+    # print(x)
+    # mesh_x,mesh_y,mesh_z = np.meshgrid(x,y,z)
+    # ratio = 1/len(x)
+    # input()
+    # # grid_3d = np.zeros((1/abstand_thresh,1/abstand_thresh,1/abstand_thresh))
+    # grid_3d = np.zeros((150,150,150))
+    # for i in tqdm.tqdm(range(150)):
+    #     for j in range(150):
+    #         for k in range(150):
+    #             coord = np.array([i,j,k])*ratio
+    #             distances = np.sqrt(np.sum(np.asarray(pointcloud_as_array - coord) ** 2, axis=1))
+    #             if np.min(distances)<abstand_thresh*5:
+    #                 idx = np.argmin(distances)
+    #                 if idx <thresh_idx:
+    #                     grid_3d[i,j,k]=255
+    #                 else:
+    #                     grid_3d[i,j,k]=128
+    #
+    #             else:
+    #                 grid_3d[i,j,k]=0
 
     # cont, result = np.unique(np.around(pointcloud_as_array), return_counts=True)
     #
@@ -134,32 +133,72 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     #
     #
     #
-    # grad_shape = np.around(maxium).astype(int)
-    # print(grad_shape)
-    #
-    # print(grid_3d.shape)
-    #
-    # input()
-    # for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
-    #     x,y,z =np.around(p).astype(np.uint8)
-    #     grid_3d[x,y,z]=128
-    #
-    # for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
-    #     x,y,z =np.around(p).astype(np.uint8)
-    #     grid_3d[x,y,z]+=64
+    scale = 400
+    grad_shape = (np.around(maxium,3)+1/scale)*scale
+    print(grad_shape)
+    grid_3d = np.zeros(grad_shape.astype(int))
 
+    print(grid_3d.shape)
+    pointcloud_as_array *= scale
+    pointcloud_as_array = np.around(pointcloud_as_array,3)
+    print(len(np.unique(pointcloud_as_array)))
+    for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
+        x, y, z=p.astype(np.uint8)
+        if grid_3d[x,y,z]==64:
+            x_min = max(x-1,0)
+            y_min = max(y-1,0)
+            z_min = max(z-1,0)
+
+            x_max = min(x+1,grid_3d.shape[0])
+            y_max = min(y+1,grid_3d.shape[1])
+            z_max = min(z+1,grid_3d.shape[2])
+            grid_3d[x_min:x_max,y_min:y_max,z_min:z_max]=64
+        else:
+            grid_3d[x,y,z] =64
+
+    for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
+        x, y, z=p.astype(np.uint8)
+        if grid_3d[x,y,z]==128:
+            x_min = max(x-1,0)
+            y_min = max(y-1,0)
+            z_min = max(z-1,0)
+
+            x_max = min(x+1,grid_3d.shape[0])
+            y_max = min(y+1,grid_3d.shape[1])
+            z_max = min(z+1,grid_3d.shape[2])
+            grid_3d[x_min:x_max,y_min:y_max,z_min:z_max]=128
+        else:
+            grid_3d[x,y,z]=128
+
+    grid_3d = grid_3d.astype(np.uint8)
     slice_nr=0
-
+    save_path_img = 'recon_Tissue'
+    post(grid_3d)
     for i in tqdm.tqdm(grid_3d):
         name = os.path.join(save_path, str(slice_nr) + '.raw')
+        name_image = os.path.join(save_path_img, str(slice_nr) + '.jpg')
+        cv2.imwrite(name_image,i)
         with open(name, 'wb') as f:
             f.write(i)
         slice_nr += 1
     return
+def cnt_area(cnt):
+  area = cv2.contourArea(cnt)
+  return area
 
+def post(img):
+    for i in img:
+        ret, binary = cv2.threshold(i, 1, 255, cv2.THRESH_BINARY_INV)
+        plt.imshow(binary)
+        plt.show()
 
-
-
+        cnts,_ = cv2.findContours(binary,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        # print(cnts)
+        sorted_cnts = sorted(cnts,key=cv2.contourArea)
+        blank = np.zeros_like(binary)
+        cv2.drawContours(blank,sorted_cnts,0,(255,255,255),-1)
+        plt.imshow(blank)
+        plt.show()
 
 
 
@@ -307,7 +346,7 @@ def setup(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_200.feb')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_067.feb')
     parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
