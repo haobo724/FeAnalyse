@@ -46,7 +46,7 @@ def centroid_histogram(clt):
     return hist
 
 
-def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path=''):
+def test(save_path='recon', save_path_img='', fat_gray_value=255, dicom_path=''):
     with open('Fat_new.pkl', 'rb') as f:
         fat = pickle.load(f)
 
@@ -57,7 +57,6 @@ def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path='')
         k = list(float(i) for i in k)
         a.append(k)
     thresh_idx = len(a) + 1
-    # else:
     for j in tissue:
         j = list(float(i) for i in j)
         a.append(j)
@@ -77,10 +76,6 @@ def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path='')
     # z = np.max(volume[2]) - np.min(volume[2]) + 1
     # print('volume :"', x, y, z)
     print(pointcloud_as_array.shape)
-
-    distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
-
-    print('distance:', distance)
     minium = np.min(pointcloud_as_array, axis=0)
     pointcloud_as_array -= minium
     maxium = np.max(pointcloud_as_array, axis=0)
@@ -111,22 +106,14 @@ def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path='')
     #             else:
     #                 grid_3d[i,j,k]=0
 
-    # cont, result = np.unique(np.around(pointcloud_as_array), return_counts=True)
-    #
-    # print(len(pointcloud_as_array))
-    # print(len(result))
-    #
-    #
-    #
     scale = 400
     grad_shape = (np.around(maxium, 3) + 1 / scale) * scale
-    print(grad_shape)
     grid_3d = np.zeros(grad_shape.astype(int))
-
     print(grid_3d.shape)
     pointcloud_as_array *= scale
     pointcloud_as_array = np.around(pointcloud_as_array, 3)
-    print(len(np.unique(pointcloud_as_array)))
+    nr = len(np.unique(pointcloud_as_array))//3
+    print('{} points will be used in volume'.format(nr))
     for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
         x, y, z = p.astype(np.uint8)
         if grid_3d[x, y, z] == 64:
@@ -157,7 +144,7 @@ def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path='')
 
     grid_3d = grid_3d.astype(np.uint8)
     slice_nr = 0
-    final_result = post(grid_3d)
+    final_result = post(grid_3d,fat_gray_value)
     final_result = np.asarray(final_result, dtype=np.uint8)
     for i in tqdm.tqdm(final_result):
         name = os.path.join(save_path, str(slice_nr) + '.raw')
@@ -172,7 +159,7 @@ def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path='')
 
 
 
-def post(img):
+def post(img,fat_gray_value=255):
     result = []
     for i in img:
         ret, binary = cv2.threshold(i, 1, 255, cv2.THRESH_BINARY_INV)
@@ -188,7 +175,7 @@ def post(img):
             area = cv2.contourArea(c)
             if area < 10:
                 # print(area)
-                cv2.drawContours(blank, [c], 0, (128, 128, 128), -1)
+                cv2.drawContours(blank, [c], 0, (fat_gray_value, fat_gray_value, fat_gray_value), -1)
         # plt.imshow(blank)
         # plt.show()
 
@@ -341,7 +328,7 @@ def setup(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast05_35_sf_133.feb')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast05_35_sf_200.feb')
     parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast05.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
