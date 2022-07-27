@@ -46,28 +46,17 @@ def centroid_histogram(clt):
     return hist
 
 
-def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
-    reader = FEmapping()
-    reader.read_dicom(dicom_path)
-    # PixelSpacing = reader.get_info('PixelSpacing')
-    # SliceThickness = reader.get_info('SliceThickness')
-    # NumberofFrames = reader.get_info('NumberofFrames')
-    # Rows = reader.get_info('Rows')
-    # Columns = reader.get_info('Columns')
-    # PixelSpacing.append(SliceThickness)
-    dicom_array = reader.get_info('dicom_array')
-
+def test(save_path='recon', save_path_img='', fat_gray_value=128, dicom_path=''):
     with open('Fat_new.pkl', 'rb') as f:
         fat = pickle.load(f)
 
     with open('Tissue_new.pkl', 'rb') as f:
         tissue = pickle.load(f)
     a = []
-    if part == 'Fat':
-        for k in fat:
-            k = list(float(i) for i in k)
-            a.append(k)
-    thresh_idx = len(a)
+    for k in fat:
+        k = list(float(i) for i in k)
+        a.append(k)
+    thresh_idx = len(a) + 1
     # else:
     for j in tissue:
         j = list(float(i) for i in j)
@@ -88,14 +77,10 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     # z = np.max(volume[2]) - np.min(volume[2]) + 1
     # print('volume :"', x, y, z)
     print(pointcloud_as_array.shape)
-    # Rows, Columns, NumberofFrames = y, x, z
-
-    # imgetoshow3DFast(pointcloud_as_array)
 
     distance = np.max(pointcloud_as_array, axis=0) - np.min(pointcloud_as_array, axis=0)
 
     print('distance:', distance)
-    # maxium = np.max(pointcloud_as_array, axis=0)
     minium = np.min(pointcloud_as_array, axis=0)
     pointcloud_as_array -= minium
     maxium = np.max(pointcloud_as_array, axis=0)
@@ -134,74 +119,84 @@ def test(save_path='recon', part='Fat', gray_value=255, dicom_path=''):
     #
     #
     scale = 400
-    grad_shape = (np.around(maxium,3)+1/scale)*scale
+    grad_shape = (np.around(maxium, 3) + 1 / scale) * scale
     print(grad_shape)
     grid_3d = np.zeros(grad_shape.astype(int))
 
     print(grid_3d.shape)
     pointcloud_as_array *= scale
-    pointcloud_as_array = np.around(pointcloud_as_array,3)
+    pointcloud_as_array = np.around(pointcloud_as_array, 3)
     print(len(np.unique(pointcloud_as_array)))
     for p in tqdm.tqdm(pointcloud_as_array[thresh_idx:]):
-        x, y, z=p.astype(np.uint8)
-        if grid_3d[x,y,z]==64:
-            x_min = max(x-1,0)
-            y_min = max(y-1,0)
-            z_min = max(z-1,0)
+        x, y, z = p.astype(np.uint8)
+        if grid_3d[x, y, z] == 64:
+            x_min = max(x - 1, 0)
+            y_min = max(y - 1, 0)
+            z_min = max(z - 1, 0)
 
-            x_max = min(x+1,grid_3d.shape[0])
-            y_max = min(y+1,grid_3d.shape[1])
-            z_max = min(z+1,grid_3d.shape[2])
-            grid_3d[x_min:x_max,y_min:y_max,z_min:z_max]=64
+            x_max = min(x + 1, grid_3d.shape[0])
+            y_max = min(y + 1, grid_3d.shape[1])
+            z_max = min(z + 1, grid_3d.shape[2])
+            grid_3d[x_min:x_max, y_min:y_max, z_min:z_max] = 64
         else:
-            grid_3d[x,y,z] =64
+            grid_3d[x, y, z] = 64
 
     for p in tqdm.tqdm(pointcloud_as_array[:thresh_idx]):
-        x, y, z=p.astype(np.uint8)
-        if grid_3d[x,y,z]==128:
-            x_min = max(x-1,0)
-            y_min = max(y-1,0)
-            z_min = max(z-1,0)
+        x, y, z = p.astype(np.uint8)
+        if grid_3d[x, y, z] == fat_gray_value:
+            x_min = max(x - 1, 0)
+            y_min = max(y - 1, 0)
+            z_min = max(z - 1, 0)
 
-            x_max = min(x+1,grid_3d.shape[0])
-            y_max = min(y+1,grid_3d.shape[1])
-            z_max = min(z+1,grid_3d.shape[2])
-            grid_3d[x_min:x_max,y_min:y_max,z_min:z_max]=128
+            x_max = min(x + 1, grid_3d.shape[0])
+            y_max = min(y + 1, grid_3d.shape[1])
+            z_max = min(z + 1, grid_3d.shape[2])
+            grid_3d[x_min:x_max, y_min:y_max, z_min:z_max] = fat_gray_value
         else:
-            grid_3d[x,y,z]=128
+            grid_3d[x, y, z] = fat_gray_value
 
     grid_3d = grid_3d.astype(np.uint8)
-    slice_nr=0
-    save_path_img = 'recon_Tissue'
-    post(grid_3d)
-    for i in tqdm.tqdm(grid_3d):
+    slice_nr = 0
+    final_result = post(grid_3d)
+    final_result = np.asarray(final_result, dtype=np.uint8)
+    for i in tqdm.tqdm(final_result):
         name = os.path.join(save_path, str(slice_nr) + '.raw')
-        name_image = os.path.join(save_path_img, str(slice_nr) + '.jpg')
-        cv2.imwrite(name_image,i)
         with open(name, 'wb') as f:
             f.write(i)
+        name_image = os.path.join(save_path_img, str(slice_nr) + '.jpg')
+        img_resize = cv2.resize(i,(200,200),cv2.INTER_NEAREST)
+        cv2.imwrite(name_image, img_resize)
         slice_nr += 1
+    print('h,w:', final_result.shape[1:])
     return
-def cnt_area(cnt):
-  area = cv2.contourArea(cnt)
-  return area
+
+
 
 def post(img):
+    result = []
     for i in img:
         ret, binary = cv2.threshold(i, 1, 255, cv2.THRESH_BINARY_INV)
-        plt.imshow(binary)
-        plt.show()
+        # plt.imshow(binary)
+        # plt.show()
 
-        cnts,_ = cv2.findContours(binary,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        cnts, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         # print(cnts)
-        sorted_cnts = sorted(cnts,key=cv2.contourArea)
+        # sorted_cnts = sorted(cnts,key=cv2.contourArea)
         blank = np.zeros_like(binary)
-        cv2.drawContours(blank,sorted_cnts,0,(255,255,255),-1)
-        plt.imshow(blank)
-        plt.show()
 
+        for c in cnts:
+            area = cv2.contourArea(c)
+            if area < 10:
+                # print(area)
+                cv2.drawContours(blank, [c], 0, (128, 128, 128), -1)
+        # plt.imshow(blank)
+        # plt.show()
 
-
+        img_post = blank + i
+        result.append(img_post)
+    return result
+    # plt.imshow(img_post)
+    # plt.show()
 
     #
     # xyz_d = distance / np.array([Rows, Columns, NumberofFrames])
@@ -346,20 +341,27 @@ def setup(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast04_30_sf_067.feb')
-    parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast04.dcm')
+    parser.add_argument('--febfile_name', type=str, help='', default=r'error722/breast05_35_sf_133.feb')
+    parser.add_argument('--dcm_name', type=str, help='', default='error722/Breast05.dcm')
     parser.add_argument('--Node_name', type=str, help='', default='breast')
     parser.add_argument('--mat_name', type=str, help='', default='fat')
-
 
     args = parser.parse_args()
     print(args)
     # setup(args)
-    save_path_Fat = 'recon_Fat'
-    save_path_Tissue = 'recon_Tissue'
-    if not os.path.exists(save_path_Fat):
-        os.mkdir(save_path_Fat)
-    if not os.path.exists(save_path_Tissue):
-        os.mkdir(save_path_Tissue)
-    test(save_path=save_path_Fat, part='Fat', gray_value=255, dicom_path=args.dcm_name)
+    if not os.path.exists('recon_raw'):
+        os.mkdir('recon_raw')
+    if not os.path.exists('recon_img'):
+        os.mkdir('recon_img')
+
+
+
+    febname = os.path.basename(args.febfile_name).split('.')[0]
+    save_path_raw = os.path.join('recon_raw',febname)
+    save_path_img = os.path.join('recon_img',febname)
+    if not os.path.exists(save_path_raw):
+        os.mkdir(save_path_raw)
+    if not os.path.exists(save_path_img):
+        os.mkdir(save_path_img)
+    test(save_path=save_path_raw, save_path_img=save_path_img, fat_gray_value=255, dicom_path=args.dcm_name)
     # test(save_path=save_path_Tissue, part='Tissue', gray_value=128, dicom_path=args.dcm_name)
