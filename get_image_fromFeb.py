@@ -115,6 +115,7 @@ def test(save_path='recon', save_path_img='',febname=''):
     final_result = post(grid_3d,fat_gray_value)
     final_result = np.asarray(final_result, dtype=np.uint8)
     for i in tqdm.tqdm(final_result):
+        i = cv2.resize(i, (420, 580), interpolation=cv2.INTER_NEAREST)
         name = os.path.join(save_path, str(slice_nr) + '.raw')
         with open(name, 'wb') as f:
             f.write(i)
