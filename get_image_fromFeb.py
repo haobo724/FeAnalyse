@@ -116,7 +116,7 @@ def test(save_path='recon', save_path_img='',febname=''):
     final_result = post(grid_3d,fat_gray_value)
     final_result = np.asarray(final_result, dtype=np.uint8)
 
-    scale_factor= (4, 2, 2)
+    scale_factor= (4, 4, 4)
     final_result = zoom(final_result, scale_factor,order=0).astype(np.uint8)
     print(final_result.shape)
     name = os.path.join(save_path, febname+str(final_result.shape) + '.raw')
