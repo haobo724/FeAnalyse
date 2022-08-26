@@ -2,6 +2,7 @@ import argparse
 import cv2
 import os
 import pickle
+from scipy.ndimage import zoom
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -114,15 +115,23 @@ def test(save_path='recon', save_path_img='',febname=''):
     slice_nr = 0
     final_result = post(grid_3d,fat_gray_value)
     final_result = np.asarray(final_result, dtype=np.uint8)
-    for i in tqdm.tqdm(final_result):
-        i = cv2.resize(i, (420, 580), interpolation=cv2.INTER_NEAREST)
-        name = os.path.join(save_path, str(slice_nr) + '.raw')
-        with open(name, 'wb') as f:
-            f.write(i)
-        name_image = os.path.join(save_path_img, str(slice_nr) + '.jpg')
-        img_resize = cv2.resize(i,(200,200),cv2.INTER_NEAREST)
-        cv2.imwrite(name_image, img_resize)
-        slice_nr += 1
+
+    scale_factor= (4, 2, 2)
+    final_result = zoom(final_result, scale_factor,order=0).astype(np.uint8)
+    print(final_result.shape)
+    name = os.path.join(save_path, febname+str(final_result.shape) + '.raw')
+    with open(name, 'wb') as f:
+        f.write(final_result)
+    # for i in tqdm.tqdm(final_result):
+    #     # print(np.unique(i))
+    #     # i = cv2.resize(i, (420, 580), interpolation=cv2.INTER_NEAREST)
+    #     name = os.path.join(save_path, str(slice_nr) + '.raw')
+    #     with open(name, 'wb') as f:
+    #         f.write(i)
+    #     name_image = os.path.join(save_path_img, str(slice_nr) + '.jpg')
+    #     img_resize = cv2.resize(i,(200,200),cv2.INTER_NEAREST)
+    #     cv2.imwrite(name_image, img_resize)
+    #     slice_nr += 1
     print('h,w:', final_result.shape[1:])
     return
 
