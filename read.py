@@ -35,8 +35,8 @@ class FEmapping():
         self.NumberofFrames = None
         self.fat_center = []
         self.tissue_center = []
-        self.fat_ecke= []
-        self.tissue_ecke =[]
+        self.fat_ecke= {}
+        self.tissue_ecke = {}
         self.xyz_spacing = []
         self.breast_name = ''
         self.thresh = 200
@@ -171,25 +171,18 @@ class FEmapping():
             else:
                 self.tissue_center.append(center_cord)
 
-    def get_eckePoint_from_element(self, element_dic, node_dic, cls='Fat'):
+    def get_element_detail(self, element_dic, node_dic, cls='Fat'):
         for element_index in element_dic.items():
-            # print(element_index)
-            cord = [0,0,0]
+            ele_node_detail = []
+
             for single_node in element_index[1]:
-                temp = list(map(float, node_dic[single_node]))
-                cord = list(map(lambda x: x[0] + x[1], zip(cord, temp)))
+                eck = list(map(float, node_dic[single_node]))
+                ele_node_detail.append(eck)
 
-                if cls == 'Fat':
-                    self.fat_ecke.append(temp)
-                else:
-                    self.tissue_ecke.append(temp)
-            center_cord = list(map(lambda x: x / 8, cord))
             if cls == 'Fat':
-                self.fat_center.append(center_cord)
+                self.fat_ecke.setdefault(f'{element_index}',ele_node_detail)
             else:
-                self.tissue_center.append(center_cord)
-            # print(list(map(lambda x: x/8, cord)))
-
+                self.tissue_ecke.setdefault(f'{element_index}',ele_node_detail)
 
     def FatOR_Tissue(self, cord):
         thresh = self.thresh

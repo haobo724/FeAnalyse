@@ -117,9 +117,10 @@ def test(save_path='recon', save_path_img='',febname=''):
     final_result = np.asarray(final_result, dtype=np.uint8)
 
     scale_factor= (4, 4, 4)
-    final_result = zoom(final_result, scale_factor,order=0).astype(np.uint8)
+    final_result = zoom(final_result, scale_factor,order=2).astype(np.uint8)
     print(final_result.shape)
-    name = os.path.join(save_path, febname+str(final_result.shape) + '.raw')
+    dim =str(final_result[2])+'x'+str(final_result[1])+'x'+str(final_result[0])
+    name = os.path.join(save_path, febname+'_uint8_'+dim+ '.raw')
     with open(name, 'wb') as f:
         f.write(final_result)
     # for i in tqdm.tqdm(final_result):
@@ -191,6 +192,7 @@ def setup(args):
     Fat_element_dic, Fat_element_dic_full = fe.get_node_single_ele(Fat_element)
     Tissue_element_dic, Tissue_element_dic_full = fe.get_node_single_ele(Tissue_element)
     node_dic = fe.get_node_dic(feb_data, f'{Node_name}')
+
     fe.get_center_from_element(Fat_element_dic, node_dic)
     fe.get_center_from_element(Tissue_element_dic, node_dic, cls='Tissue')
 
