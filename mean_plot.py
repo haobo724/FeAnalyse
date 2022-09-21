@@ -12,16 +12,20 @@ def coord(PixelSpacing, point_location):
     return int(x), int(y)
 
 
-def save(name, maxium, line):
+def save(name, buffer):
     text_name = os.path.basename(name).split('.')[0]
     save_path = os.path.join(os.path.dirname(name), text_name+ '.txt')
-    side_points = np.concatenate([line[:10] , line[-10:]])
-    avg = np.mean(side_points)
 
     with open(save_path, 'w') as f:
-        f.write('maxium: '+ str(maxium))
-        f.write('\n')
-        f.write('avg: '+ str(avg))
+        for each_point in buffer:
+            maxium, line = each_point
+            side_points = np.concatenate([line[:10], line[-10:]])
+            avg = np.mean(side_points)
+            f.write('maxium: '+ str(maxium))
+            f.write('\n')
+            f.write('avg: '+ str(avg))
+            f.write('\n')
+
 
 
 def messure(dicom, windows_width=30, point_location=[86.351, 76.596], offset=None, show=True):
@@ -34,7 +38,6 @@ def messure(dicom, windows_width=30, point_location=[86.351, 76.596], offset=Non
     dicom_array = np.moveaxis(dicom_array, 0, 2)
 
     PixelSpacing = head[0x0028, 0x0030][:]
-
     if offset is None:
         offset = []
     else:
@@ -81,7 +84,6 @@ def messure(dicom, windows_width=30, point_location=[86.351, 76.596], offset=Non
 
     x_axis = np.arange(-windows_width, windows_width)
     y_axis = sampled_line
-    save(dicom, np.max(suchbereich), y_axis)
 
     print('-' * 20)
     if show:
@@ -90,7 +92,7 @@ def messure(dicom, windows_width=30, point_location=[86.351, 76.596], offset=Non
         plt.xlabel("x")
         plt.ylabel("sinx")
         plt.show()
-
+    return  np.max(suchbereich), y_axis
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -104,5 +106,8 @@ if __name__ == '__main__':
     dicom_path = glob.glob(os.path.join(args.dicom_path, '*.dcm'))
     for dicom in dicom_path:
         print('Now:', dicom)
+        write_buffer =[]
         for p in point_location:
-            messure(dicom, windows_width=args.windows, point_location=p, offset=args.offset)
+            max_value , line_info =messure(dicom, windows_width=args.windows, point_location=p, offset=args.offset)
+            write_buffer.append([max_value,line_info])
+        save(dicom,write_buffer)
